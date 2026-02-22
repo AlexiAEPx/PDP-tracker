@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "../lib/supabase";
 
 const PRECIO = 4.93;
@@ -332,6 +332,237 @@ function Hist2025({ data }) {
   );
 }
 
+// ── AI Expandable Field ──
+function AiField() {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const [image, setImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
+  const fileRef = useRef(null);
+
+  const handleImage = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setImage(ev.target.result);
+      setImagePreview(URL.createObjectURL(file));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setImage(null);
+    setImagePreview(null);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const analyze = async () => {
+    if (!text.trim() && !image) return;
+    setLoading(true);
+    setResult("");
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text.trim() || null, image: image || null }),
+      });
+      const data = await res.json();
+      if (res.ok) setResult(data.result);
+      else setResult("Error: " + (data.error || "Error desconocido"));
+    } catch (err) {
+      setResult("Error de conexión: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clear = () => {
+    setText("");
+    removeImage();
+    setResult("");
+  };
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: "100%",
+          background: "linear-gradient(135deg, #667eea, #764ba2)",
+          border: "none",
+          borderRadius: open ? "10px 10px 0 0" : 10,
+          padding: "10px 14px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          cursor: "pointer",
+          transition: "border-radius 0.2s",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 16 }}>🤖</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#fff", letterSpacing: "0.5px" }}>
+            Asistente IA
+          </span>
+          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", fontWeight: 500 }}>
+            Sonnet 4.6
+          </span>
+        </div>
+        <span style={{
+          color: "rgba(255,255,255,0.8)",
+          fontSize: 10,
+          transition: "transform 0.2s",
+          transform: open ? "rotate(180deg)" : "rotate(0)",
+          display: "inline-block",
+        }}>▼</span>
+      </button>
+
+      {open && (
+        <div style={{
+          border: "1px solid #e0daf0",
+          borderTop: "none",
+          borderRadius: "0 0 10px 10px",
+          background: "#fff",
+          padding: 14,
+        }}>
+          <textarea
+            placeholder="Pega aquí texto con datos de mamografías, totales, pendientes..."
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            style={{
+              width: "100%",
+              minHeight: 70,
+              padding: "8px 10px",
+              border: "1px solid #e0daf0",
+              borderRadius: 8,
+              fontSize: 13,
+              fontFamily: "inherit",
+              resize: "vertical",
+              outline: "none",
+              boxSizing: "border-box",
+              color: "#333",
+            }}
+          />
+
+          {/* Image upload */}
+          <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <label style={{
+              fontSize: 11,
+              color: "#764ba2",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "4px 10px",
+              border: "1px dashed #c4b5d9",
+              borderRadius: 6,
+              background: "#f8f5ff",
+            }}>
+              📷 Adjuntar imagen
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImage}
+                style={{ display: "none" }}
+              />
+            </label>
+            {imagePreview && (
+              <div style={{ position: "relative", display: "inline-block" }}>
+                <img
+                  src={imagePreview}
+                  alt="preview"
+                  style={{ height: 40, borderRadius: 4, border: "1px solid #e0daf0" }}
+                />
+                <button
+                  onClick={removeImage}
+                  style={{
+                    position: "absolute",
+                    top: -6,
+                    right: -6,
+                    width: 16,
+                    height: 16,
+                    borderRadius: "50%",
+                    background: "#e74c3c",
+                    color: "#fff",
+                    border: "none",
+                    fontSize: 9,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    lineHeight: 1,
+                  }}
+                >✕</button>
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
+            <button
+              onClick={analyze}
+              disabled={loading || (!text.trim() && !image)}
+              style={{
+                flex: 1,
+                padding: "8px 12px",
+                border: "none",
+                borderRadius: 7,
+                background: loading || (!text.trim() && !image) ? "#ccc" : "linear-gradient(135deg, #667eea, #764ba2)",
+                color: "#fff",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: loading || (!text.trim() && !image) ? "default" : "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              {loading ? "Analizando…" : "Analizar con IA"}
+            </button>
+            {(text || image || result) && (
+              <button
+                onClick={clear}
+                style={{
+                  padding: "8px 12px",
+                  border: "1px solid #ddd",
+                  borderRadius: 7,
+                  background: "#fff",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  color: "#888",
+                  fontFamily: "inherit",
+                }}
+              >Limpiar</button>
+            )}
+          </div>
+
+          {/* Result */}
+          {result && (
+            <div style={{
+              marginTop: 12,
+              background: "#f8f5ff",
+              border: "1px solid #e0daf0",
+              borderRadius: 8,
+              padding: "10px 12px",
+            }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#764ba2", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Resultado del análisis
+              </div>
+              <div style={{ fontSize: 13, color: "#333", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+                {result}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main App ──
 export default function Home() {
   const [regs, setRegs] = useState([]);
@@ -433,6 +664,9 @@ export default function Home() {
 
   return (
     <div style={S.container}>
+      {/* AI FIELD */}
+      <AiField />
+
       {/* HEADER */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 14 }}>
         <div>
