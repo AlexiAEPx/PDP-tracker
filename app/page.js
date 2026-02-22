@@ -614,6 +614,14 @@ export default function Home() {
   const tots = RADS.map((rad) => { const t = fullRegs.reduce((s, reg) => s + (reg.lecturas?.[rad.id] || 0), 0); return { ...rad, total: t, bruto: t * PRECIO }; });
   const totalG = tots.reduce((s, r) => s + r.total, 0);
 
+  const lastEdit = useMemo(() => {
+    if (!regs.length) return null;
+    const latest = regs.reduce((max, r) => (r.ts && r.ts > (max || "")) ? r.ts : max, null);
+    if (!latest) return null;
+    const d = new Date(latest);
+    return d.toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  }, [regs]);
+
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#fafaf8" }}>
       <p style={{ color: "#999", fontSize: 14 }}>Cargando…</p>
@@ -630,6 +638,7 @@ export default function Home() {
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: "-0.5px" }}>PDP Tracker</h1>
           <p style={{ fontSize: 11, color: "#888", margin: "3px 0 0", letterSpacing: "0.5px", textTransform: "uppercase" }}>Control de lecturas · Dr. Espinosa</p>
+          {lastEdit && <p style={{ fontSize: 10, color: "#bbb", margin: "2px 0 0" }}>Última edición: {lastEdit}</p>}
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
           {status && <span style={S.statusBadge}>{status}</span>}
