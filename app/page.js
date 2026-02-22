@@ -50,12 +50,12 @@ async function updateConfig(value) {
   return !error;
 }
 
-// ── Mini Line Chart (compact, same height as MiniBars) ──
+// ── Mini Line Chart (integrated, matches MiniBars height) ──
 function MiniLineChart({ subs }) {
   if (!subs || subs.length < 2) return null;
 
-  const W = 120, H = 80;
-  const pad = { top: 10, right: 6, bottom: 4, left: 6 };
+  const W = 220, H = 120;
+  const pad = { top: 16, right: 14, bottom: 18, left: 10 };
   const cw = W - pad.left - pad.right;
   const ch = H - pad.top - pad.bottom;
 
@@ -83,13 +83,11 @@ function MiniLineChart({ subs }) {
         const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
         return (
           <g key={r.id}>
-            <path d={linePath} fill="none" stroke={r.color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={linePath} fill="none" stroke={r.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             {points.map((p, i) => p.v > 0 && (
               <g key={i}>
-                <circle cx={p.x} cy={p.y} r="2.5" fill="#fff" stroke={r.color} strokeWidth="1.2" />
-                {i === points.length - 1 && (
-                  <text x={p.x} y={p.y - 4} textAnchor="middle" fontSize="6" fontWeight="700" fill={r.color}>{p.v}</text>
-                )}
+                <circle cx={p.x} cy={p.y} r="3" fill="#fff" stroke={r.color} strokeWidth="1.5" />
+                <text x={p.x} y={p.y - 5} textAnchor="middle" fontSize="7" fontWeight="700" fill={r.color}>{p.v}</text>
               </g>
             ))}
           </g>
@@ -97,7 +95,7 @@ function MiniLineChart({ subs }) {
       })}
       {/* Sub-period labels at bottom */}
       {subs.map((s, i) => (
-        <text key={s.id} x={getX(i)} y={H - 1} textAnchor="middle" fontSize="5" fill="#ccc" fontWeight="600">{s.periodo}</text>
+        <text key={s.id} x={getX(i)} y={H - 3} textAnchor="middle" fontSize="7" fill="#bbb" fontWeight="600">{s.periodo}</text>
       ))}
     </svg>
   );
@@ -105,16 +103,16 @@ function MiniLineChart({ subs }) {
 
 // ── Mini bars ──
 function MiniBars({ lecturas, maxVal }) {
-  const barH = 80;
+  const barH = 110;
   const getH = (v) => (v / (maxVal || 1)) * barH * 0.85;
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: barH + 16, padding: "0 2px" }}>
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: barH + 18, padding: "0 4px" }}>
       {RADS.map((r) => {
         const v = lecturas[r.id] || 0;
         return (
           <div key={r.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            {v > 0 && <span style={{ fontSize: 8, fontWeight: 700, color: "#666", marginBottom: 1 }}>{v}</span>}
-            <div style={{ width: 18, height: Math.max(getH(v), 2), background: r.color, borderRadius: "3px 3px 0 0" }} />
+            {v > 0 && <span style={{ fontSize: 9, fontWeight: 700, color: "#666", marginBottom: 1 }}>{v}</span>}
+            <div style={{ width: 24, height: Math.max(getH(v), 2), background: r.color, borderRadius: "3px 3px 0 0" }} />
           </div>
         );
       })}
@@ -153,12 +151,12 @@ function MesCard({ mes, maxVal, onEdit, onDelete, delCfm, setDelCfm }) {
       </div>
 
       <div style={{ padding: "8px 12px 12px" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", background: "#fafaf8", borderRadius: 8, padding: "8px 6px 4px", marginBottom: 8, gap: 0 }}>
+        <div style={{ display: "flex", alignItems: "flex-end", background: "#fafaf8", borderRadius: 8, padding: "10px 8px 6px", marginBottom: 8, gap: 0 }}>
           <div style={{ flexShrink: 0 }}>
             <MiniBars lecturas={mes.lecturas} maxVal={maxVal} />
           </div>
           {hasSubs && mes.subs.length >= 2 && (
-            <div style={{ flex: 1, minWidth: 0, height: 80, marginLeft: 4, borderLeft: "1px solid #eee", paddingLeft: 4 }}>
+            <div style={{ flex: 1, minWidth: 0, height: 110, marginLeft: 6, borderLeft: "1px solid #eee", paddingLeft: 6 }}>
               <MiniLineChart subs={mes.subs} />
             </div>
           )}
@@ -616,6 +614,14 @@ export default function Home() {
   const tots = RADS.map((rad) => { const t = fullRegs.reduce((s, reg) => s + (reg.lecturas?.[rad.id] || 0), 0); return { ...rad, total: t, bruto: t * PRECIO }; });
   const totalG = tots.reduce((s, r) => s + r.total, 0);
 
+  const lastEdit = useMemo(() => {
+    if (!regs.length) return null;
+    const latest = regs.reduce((max, r) => (r.ts && r.ts > (max || "")) ? r.ts : max, null);
+    if (!latest) return null;
+    const d = new Date(latest);
+    return d.toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  }, [regs]);
+
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#fafaf8" }}>
       <p style={{ color: "#999", fontSize: 14 }}>Cargando…</p>
@@ -632,6 +638,7 @@ export default function Home() {
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: "-0.5px" }}>PDP Tracker</h1>
           <p style={{ fontSize: 11, color: "#888", margin: "3px 0 0", letterSpacing: "0.5px", textTransform: "uppercase" }}>Control de lecturas · Dr. Espinosa</p>
+          {lastEdit && <p style={{ fontSize: 10, color: "#bbb", margin: "2px 0 0" }}>Última edición: {lastEdit}</p>}
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
           {status && <span style={S.statusBadge}>{status}</span>}
