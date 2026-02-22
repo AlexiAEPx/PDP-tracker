@@ -54,7 +54,7 @@ async function updateConfig(value) {
 function MiniLineChart({ subs }) {
   if (!subs || subs.length < 2) return null;
 
-  const W = 220, H = 120;
+  const W = 220, H = 160;
   const pad = { top: 16, right: 14, bottom: 18, left: 10 };
   const cw = W - pad.left - pad.right;
   const ch = H - pad.top - pad.bottom;
@@ -103,16 +103,16 @@ function MiniLineChart({ subs }) {
 
 // ── Mini bars ──
 function MiniBars({ lecturas, maxVal }) {
-  const barH = 110;
-  const getH = (v) => (v / (maxVal || 1)) * barH * 0.85;
+  const barH = 150;
+  const getH = (v) => (v / (maxVal || 1)) * barH * 0.92;
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: barH + 18, padding: "0 4px" }}>
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: barH + 18, padding: "0 4px" }}>
       {RADS.map((r) => {
         const v = lecturas[r.id] || 0;
         return (
           <div key={r.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             {v > 0 && <span style={{ fontSize: 9, fontWeight: 700, color: "#666", marginBottom: 1 }}>{v}</span>}
-            <div style={{ width: 24, height: Math.max(getH(v), 2), background: r.color, borderRadius: "3px 3px 0 0" }} />
+            <div style={{ width: 28, height: Math.max(getH(v), 2), background: r.color, borderRadius: "3px 3px 0 0" }} />
           </div>
         );
       })}
@@ -156,7 +156,7 @@ function MesCard({ mes, maxVal, onEdit, onDelete, delCfm, setDelCfm }) {
             <MiniBars lecturas={mes.lecturas} maxVal={maxVal} />
           </div>
           {hasSubs && mes.subs.length >= 2 && (
-            <div style={{ flex: 1, minWidth: 0, height: 110, marginLeft: 6, borderLeft: "1px solid #eee", paddingLeft: 6 }}>
+            <div style={{ flex: 1, minWidth: 0, height: 150, marginLeft: 6, borderLeft: "1px solid #eee", paddingLeft: 6 }}>
               <MiniLineChart subs={mes.subs} />
             </div>
           )}
@@ -254,14 +254,14 @@ function Hist2025({ data }) {
       </button>
       {open && (
         <div style={{ borderTop: "1px solid #e8e6e2", padding: "10px 12px" }}>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 4, justifyContent: "center", marginBottom: 14, padding: "6px 0" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, justifyContent: "center", marginBottom: 14, padding: "6px 0" }}>
             {data.map((r) => {
-              const h = (r.lecturas / maxLect) * 60;
+              const h = (r.lecturas / maxLect) * 110;
               return (
-                <div key={r.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
-                  <span style={{ fontSize: 8, fontWeight: 700, color: "#888" }}>{r.lecturas.toLocaleString("es-ES")}</span>
-                  <div style={{ width: 22, height: Math.max(h, 3), background: r.color, borderRadius: "4px 4px 0 0" }} />
-                  <span style={{ fontSize: 8, color: "#aaa", fontWeight: 600, marginTop: 1 }}>{r.apodo}</span>
+                <div key={r.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, flex: 1, maxWidth: 60 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "#888" }}>{r.lecturas.toLocaleString("es-ES")}</span>
+                  <div style={{ width: "100%", height: Math.max(h, 3), background: r.color, borderRadius: "4px 4px 0 0" }} />
+                  <span style={{ fontSize: 9, color: "#aaa", fontWeight: 600, marginTop: 2 }}>{r.apodo}</span>
                 </div>
               );
             })}
@@ -630,6 +630,13 @@ export default function Home() {
 
   return (
     <div style={S.container}>
+      {/* LAST UPDATE TIMESTAMP */}
+      {lastEdit && (
+        <p style={{ fontSize: 10, color: "#c0c0c0", margin: "0 0 6px", textAlign: "center", letterSpacing: "0.3px" }}>
+          Última actualización: {lastEdit}
+        </p>
+      )}
+
       {/* AI FIELD */}
       <AiField />
 
@@ -638,7 +645,6 @@ export default function Home() {
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: "-0.5px" }}>PDP Tracker</h1>
           <p style={{ fontSize: 11, color: "#888", margin: "3px 0 0", letterSpacing: "0.5px", textTransform: "uppercase" }}>Control de lecturas · Dr. Espinosa</p>
-          {lastEdit && <p style={{ fontSize: 10, color: "#bbb", margin: "2px 0 0" }}>Última edición: {lastEdit}</p>}
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
           {status && <span style={S.statusBadge}>{status}</span>}
