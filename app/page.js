@@ -54,14 +54,17 @@ async function updateConfig(value) {
 function WeeklyAreaChart({ subs }) {
   if (!subs || subs.length < 1) return null;
 
-  const W = 300, H = 140;
-  const pad = { top: 22, right: 12, bottom: 32, left: 32 };
+  const W = 300, H = 110;
+  const pad = { top: 18, right: 12, bottom: 28, left: 32 };
   const cw = W - pad.left - pad.right;
   const ch = H - pad.top - pad.bottom;
 
-  // Compute max value across all subs and rads
+  // Compute max cumulative value across all rads
   let maxVal = 0;
-  subs.forEach((s) => RADS.forEach((r) => { const v = s.lecturas[r.id] || 0; if (v > maxVal) maxVal = v; }));
+  RADS.forEach((r) => {
+    let cumul = 0;
+    subs.forEach((s) => { cumul += (s.lecturas[r.id] || 0); if (cumul > maxVal) maxVal = cumul; });
+  });
   if (maxVal === 0) maxVal = 1;
   // Add 15% headroom
   const yMax = Math.ceil(maxVal * 1.15);
@@ -91,7 +94,8 @@ function WeeklyAreaChart({ subs }) {
 
         {/* Areas + Lines for each rad */}
         {RADS.map((r) => {
-          const points = subs.map((s, i) => ({ x: getX(i), y: getY(s.lecturas[r.id] || 0), v: s.lecturas[r.id] || 0 }));
+          let cumul = 0;
+          const points = subs.map((s, i) => { cumul += (s.lecturas[r.id] || 0); return { x: getX(i), y: getY(cumul), v: cumul }; });
           if (points.every((p) => p.v === 0)) return null;
 
           const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
@@ -132,36 +136,20 @@ function WeeklyAreaChart({ subs }) {
 }
 
 // ── Mini bars ──
-function MiniBars({ lecturas, maxVal, subs }) {
+function MiniBars({ lecturas, maxVal }) {
   const barH = 80;
   const getH = (v) => (v / (maxVal || 1)) * barH * 0.85;
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 0, height: barH + 16, padding: "0 2px" }}>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 2 }}>
-        {RADS.map((r) => {
-          const v = lecturas[r.id] || 0;
-          return (
-            <div key={r.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              {v > 0 && <span style={{ fontSize: 8, fontWeight: 700, color: "#666", marginBottom: 1 }}>{v}</span>}
-              <div style={{ width: subs?.length ? 12 : 18, height: Math.max(getH(v), 2), background: r.color, borderRadius: "3px 3px 0 0" }} />
-            </div>
-          );
-        })}
-      </div>
-      {subs?.map((sub, si) => (
-        <div key={sub.id} style={{ display: "flex", alignItems: "flex-end", gap: 1, marginLeft: si === 0 ? 4 : 2, paddingLeft: si === 0 ? 4 : 0, borderLeft: si === 0 ? "1px dashed #ddd" : "none" }}>
-          {RADS.map((r) => {
-            const v = sub.lecturas[r.id] || 0;
-            if (!v) return <div key={r.id} style={{ width: 8 }} />;
-            return (
-              <div key={r.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <span style={{ fontSize: 7, fontWeight: 600, color: "#bbb", marginBottom: 1 }}>{v}</span>
-                <div style={{ width: 8, height: Math.max(getH(v), 2), background: `${r.color}40`, border: `1px dashed ${r.color}`, borderRadius: "2px 2px 0 0", boxSizing: "border-box" }} />
-              </div>
-            );
-          })}
-        </div>
-      ))}
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: barH + 16, padding: "0 2px" }}>
+      {RADS.map((r) => {
+        const v = lecturas[r.id] || 0;
+        return (
+          <div key={r.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {v > 0 && <span style={{ fontSize: 8, fontWeight: 700, color: "#666", marginBottom: 1 }}>{v}</span>}
+            <div style={{ width: 18, height: Math.max(getH(v), 2), background: r.color, borderRadius: "3px 3px 0 0" }} />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -198,7 +186,7 @@ function MesCard({ mes, maxVal, onEdit, onDelete, delCfm, setDelCfm }) {
 
       <div style={{ padding: "8px 12px 12px" }}>
         <div style={{ display: "flex", justifyContent: "center", background: "#fafaf8", borderRadius: 8, padding: "8px 6px 4px", marginBottom: 8 }}>
-          <MiniBars lecturas={mes.lecturas} maxVal={maxVal} subs={hasSubs ? mes.subs : null} />
+          <MiniBars lecturas={mes.lecturas} maxVal={maxVal} />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {RADS.map((r) => {
