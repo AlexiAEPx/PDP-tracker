@@ -50,88 +50,56 @@ async function updateConfig(value) {
   return !error;
 }
 
-// ── Weekly Area Chart ──
-function WeeklyAreaChart({ subs }) {
-  if (!subs || subs.length < 1) return null;
+// ── Mini Line Chart (compact, same height as MiniBars) ──
+function MiniLineChart({ subs }) {
+  if (!subs || subs.length < 2) return null;
 
-  const W = 300, H = 110;
-  const pad = { top: 18, right: 12, bottom: 28, left: 32 };
+  const W = 120, H = 80;
+  const pad = { top: 10, right: 6, bottom: 4, left: 6 };
   const cw = W - pad.left - pad.right;
   const ch = H - pad.top - pad.bottom;
 
-  // Compute max cumulative value across all rads
   let maxVal = 0;
   RADS.forEach((r) => {
     let cumul = 0;
     subs.forEach((s) => { cumul += (s.lecturas[r.id] || 0); if (cumul > maxVal) maxVal = cumul; });
   });
-  if (maxVal === 0) maxVal = 1;
-  // Add 15% headroom
+  if (maxVal === 0) return null;
   const yMax = Math.ceil(maxVal * 1.15);
 
-  // X positions: distribute evenly
-  const xStep = subs.length > 1 ? cw / (subs.length - 1) : cw / 2;
-  const getX = (i) => pad.left + (subs.length > 1 ? i * xStep : cw / 2);
+  const xStep = cw / (subs.length - 1);
+  const getX = (i) => pad.left + i * xStep;
   const getY = (v) => pad.top + ch - (v / yMax) * ch;
 
-  // Y-axis ticks (3-4 ticks)
-  const nTicks = 4;
-  const tickStep = Math.ceil(yMax / nTicks / 10) * 10 || Math.ceil(yMax / nTicks);
-  const ticks = [];
-  for (let t = 0; t <= yMax; t += tickStep) ticks.push(t);
-  if (ticks[ticks.length - 1] < yMax) ticks.push(yMax);
-
   return (
-    <div style={{ background: "#fafaf8", borderRadius: 8, padding: "6px 4px 2px", marginBottom: 8 }}>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
-        {/* Grid lines */}
-        {ticks.map((t) => (
-          <g key={t}>
-            <line x1={pad.left} y1={getY(t)} x2={W - pad.right} y2={getY(t)} stroke="#e8e8e4" strokeWidth="0.5" />
-            <text x={pad.left - 4} y={getY(t) + 3} textAnchor="end" fontSize="7" fill="#bbb" fontWeight="600">{t}</text>
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "100%", display: "block" }}>
+      {/* Baseline */}
+      <line x1={pad.left} y1={pad.top + ch} x2={W - pad.right} y2={pad.top + ch} stroke="#e8e8e4" strokeWidth="0.5" />
+      {/* Lines + dots for each rad */}
+      {RADS.map((r) => {
+        let cumul = 0;
+        const points = subs.map((s, i) => { cumul += (s.lecturas[r.id] || 0); return { x: getX(i), y: getY(cumul), v: cumul }; });
+        if (points.every((p) => p.v === 0)) return null;
+        const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
+        return (
+          <g key={r.id}>
+            <path d={linePath} fill="none" stroke={r.color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            {points.map((p, i) => p.v > 0 && (
+              <g key={i}>
+                <circle cx={p.x} cy={p.y} r="2.5" fill="#fff" stroke={r.color} strokeWidth="1.2" />
+                {i === points.length - 1 && (
+                  <text x={p.x} y={p.y - 4} textAnchor="middle" fontSize="6" fontWeight="700" fill={r.color}>{p.v}</text>
+                )}
+              </g>
+            ))}
           </g>
-        ))}
-
-        {/* Areas + Lines for each rad */}
-        {RADS.map((r) => {
-          let cumul = 0;
-          const points = subs.map((s, i) => { cumul += (s.lecturas[r.id] || 0); return { x: getX(i), y: getY(cumul), v: cumul }; });
-          if (points.every((p) => p.v === 0)) return null;
-
-          const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
-          const areaPath = `${linePath} L${points[points.length - 1].x},${pad.top + ch} L${points[0].x},${pad.top + ch} Z`;
-
-          return (
-            <g key={r.id}>
-              <path d={areaPath} fill={r.color} opacity="0.12" />
-              <path d={linePath} fill="none" stroke={r.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              {points.map((p, i) => p.v > 0 && (
-                <g key={i}>
-                  <circle cx={p.x} cy={p.y} r="3.5" fill="#fff" stroke={r.color} strokeWidth="1.8" />
-                  <text x={p.x} y={p.y - 6} textAnchor="middle" fontSize="7" fontWeight="700" fill={r.color}>{p.v}</text>
-                </g>
-              ))}
-            </g>
-          );
-        })}
-
-        {/* X-axis labels */}
-        {subs.map((s, i) => (
-          <text key={s.id} x={getX(i)} y={H - pad.bottom + 14} textAnchor="middle" fontSize="7" fill="#aaa" fontWeight="600">{s.periodo}</text>
-        ))}
-
-        {/* Baseline */}
-        <line x1={pad.left} y1={pad.top + ch} x2={W - pad.right} y2={pad.top + ch} stroke="#ddd" strokeWidth="0.7" />
-      </svg>
-      {/* Inline legend */}
-      <div style={{ display: "flex", justifyContent: "center", gap: 10, padding: "2px 0 4px" }}>
-        {RADS.map((r) => (
-          <span key={r.id} style={{ fontSize: 9, color: r.color, fontWeight: 600, display: "flex", alignItems: "center", gap: 3 }}>
-            <span style={{ width: 10, height: 2, background: r.color, borderRadius: 1, display: "inline-block" }} />{r.apodo}
-          </span>
-        ))}
-      </div>
-    </div>
+        );
+      })}
+      {/* Sub-period labels at bottom */}
+      {subs.map((s, i) => (
+        <text key={s.id} x={getX(i)} y={H - 1} textAnchor="middle" fontSize="5" fill="#ccc" fontWeight="600">{s.periodo}</text>
+      ))}
+    </svg>
   );
 }
 
@@ -185,8 +153,15 @@ function MesCard({ mes, maxVal, onEdit, onDelete, delCfm, setDelCfm }) {
       </div>
 
       <div style={{ padding: "8px 12px 12px" }}>
-        <div style={{ display: "flex", justifyContent: "center", background: "#fafaf8", borderRadius: 8, padding: "8px 6px 4px", marginBottom: 8 }}>
-          <MiniBars lecturas={mes.lecturas} maxVal={maxVal} />
+        <div style={{ display: "flex", alignItems: "flex-end", background: "#fafaf8", borderRadius: 8, padding: "8px 6px 4px", marginBottom: 8, gap: 0 }}>
+          <div style={{ flexShrink: 0 }}>
+            <MiniBars lecturas={mes.lecturas} maxVal={maxVal} />
+          </div>
+          {hasSubs && mes.subs.length >= 2 && (
+            <div style={{ flex: 1, minWidth: 0, height: 80, marginLeft: 4, borderLeft: "1px solid #eee", paddingLeft: 4 }}>
+              <MiniLineChart subs={mes.subs} />
+            </div>
+          )}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {RADS.map((r) => {
@@ -217,9 +192,6 @@ function MesCard({ mes, maxVal, onEdit, onDelete, delCfm, setDelCfm }) {
 
       {hasSubs && open && (
         <div style={{ borderTop: "1px solid #f0f0f0" }}>
-          <div style={{ padding: "10px 12px 4px" }}>
-            <WeeklyAreaChart subs={mes.subs} />
-          </div>
           {mes.subs.map((sub) => {
             const subTotal = RADS.reduce((s, r) => s + (sub.lecturas[r.id] || 0), 0);
             return (
