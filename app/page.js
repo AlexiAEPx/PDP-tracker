@@ -9,6 +9,7 @@ const RADS = [
   { id: "espinosa", nombre: "Alexis Espinosa Pizarro", corto: "Espinosa", apodo: "Alexis", color: "#c4956a", bg: "linear-gradient(135deg, #c4956a, #d4a97a)" },
   { id: "fernandez", nombre: "José Mª Fernández Peña", corto: "Fernández", apodo: "Chema", color: "#6a9ec4", bg: "linear-gradient(135deg, #6a9ec4, #7ab0d4)" },
   { id: "vazquez", nombre: "Jorge Vázquez Alfageme", corto: "Vázquez", apodo: "Jorge", color: "#8bc49a", bg: "linear-gradient(135deg, #8bc49a, #9bd4aa)" },
+  { id: "aguilar", nombre: "Natalia Aguilar Pérez", corto: "Aguilar", apodo: "Natalia", color: "#c47a9e", bg: "linear-gradient(135deg, #c47a9e, #d48aae)" },
 ];
 
 const eur = (n) => n.toLocaleString("es-ES", { style: "currency", currency: "EUR" });
@@ -233,19 +234,19 @@ function MesCard({ mes, maxVal, onEdit, onDelete, delCfm, setDelCfm }) {
   );
 }
 
-// ── 2025 Historical ──
-function Hist2025({ data }) {
+// ── Historical Year ──
+function HistYear({ year, data }) {
   const [open, setOpen] = useState(false);
   if (!data.length) return null;
   const total = data.reduce((s, r) => s + r.lecturas, 0);
   const maxLect = data[0]?.lecturas || 1;
 
   return (
-    <div style={{ borderRadius: 12, border: "1px solid #e0ddd8", overflow: "hidden", background: "#f9f8f5" }}>
+    <div style={{ borderRadius: 12, border: "1px solid #e0ddd8", overflow: "hidden", background: "#f9f8f5", marginBottom: 8 }}>
       <button onClick={() => setOpen(!open)} style={{ width: "100%", background: "none", border: "none", padding: "12px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", fontFamily: "inherit", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
           <span style={{ transition: "transform 0.2s", transform: open ? "rotate(90deg)" : "rotate(0)", display: "inline-block", fontSize: 10, color: "#aaa" }}>▶</span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#888" }}>📁 2025</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#888" }}>📁 {year}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
           <span style={{ fontSize: 11, color: "#aaa", fontWeight: 600 }}>{total.toLocaleString("es-ES")}</span>
@@ -711,6 +712,17 @@ export default function Home() {
   const tots = RADS.map((rad) => { const t = fullRegs.reduce((s, reg) => s + (reg.lecturas?.[rad.id] || 0), 0); return { ...rad, total: t, bruto: t * PRECIO }; });
   const totalG = tots.reduce((s, r) => s + r.total, 0);
 
+  const histByYear = useMemo(() => {
+    const years = {};
+    hist.forEach((r) => {
+      if (!years[r.anio]) years[r.anio] = [];
+      years[r.anio].push(r);
+    });
+    return Object.entries(years)
+      .sort(([a], [b]) => Number(b) - Number(a))
+      .map(([year, data]) => ({ year: Number(year), data: data.sort((a, b) => b.lecturas - a.lecturas) }));
+  }, [hist]);
+
   const lastEdit = useMemo(() => {
     if (!regs.length) return null;
     const latest = regs.reduce((max, r) => (r.ts && r.ts > (max || "")) ? r.ts : max, null);
@@ -785,7 +797,7 @@ export default function Home() {
         {tots.map((r) => {
           const pct = totalG > 0 ? ((r.total / totalG) * 100).toFixed(0) : 0;
           return (
-            <div key={r.id} style={{ flex: "1 1 calc(33% - 8px)", background: r.bg, borderRadius: 10, padding: "12px 10px 10px", color: "#fff", position: "relative", overflow: "hidden", minWidth: 100 }}>
+            <div key={r.id} style={{ flex: "1 1 calc(50% - 8px)", background: r.bg, borderRadius: 10, padding: "12px 10px 10px", color: "#fff", position: "relative", overflow: "hidden", minWidth: 100 }}>
               <div style={{ position: "absolute", top: -15, right: -15, width: 50, height: 50, borderRadius: "50%", background: "rgba(255,255,255,0.12)" }} />
               <div style={{ fontSize: 10, fontWeight: 600, opacity: 0.85, marginBottom: 6, lineHeight: 1.2 }}>{r.nombre}</div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
@@ -835,7 +847,9 @@ export default function Home() {
       {/* HISTORICAL */}
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ ...S.secTitle, marginBottom: 10 }}>Histórico</h2>
-        <Hist2025 data={hist} />
+        {histByYear.map(({ year, data }) => (
+          <HistYear key={year} year={year} data={data} />
+        ))}
       </div>
 
       {/* Legend */}
