@@ -290,6 +290,83 @@ function Hist2025({ data }) {
   );
 }
 
+// ── Year Cumulative Chart ──
+function YearCumulativeChart({ meses }) {
+  if (!meses || meses.length === 0) return null;
+
+  const cumul = {};
+  RADS.forEach((r) => { cumul[r.id] = 0; });
+
+  const points = meses.map((m) => {
+    RADS.forEach((r) => { cumul[r.id] += (m.lecturas[r.id] || 0); });
+    return { label: m.mes.replace(/\s*\d{4}$/, ""), values: { ...cumul } };
+  });
+
+  let maxVal = 0;
+  points.forEach((p) => {
+    RADS.forEach((r) => { if (p.values[r.id] > maxVal) maxVal = p.values[r.id]; });
+  });
+  if (maxVal === 0) return null;
+
+  const W = 500, H = 200;
+  const pad = { top: 22, right: 20, bottom: 28, left: 42 };
+  const cw = W - pad.left - pad.right;
+  const ch = H - pad.top - pad.bottom;
+  const yMax = Math.ceil(maxVal * 1.15);
+
+  const n = points.length;
+  const xStep = n > 1 ? cw / (n - 1) : 0;
+  const getX = (i) => pad.left + (n > 1 ? i * xStep : cw / 2);
+  const getY = (v) => pad.top + ch - (v / yMax) * ch;
+
+  const yTicks = 4;
+  const yLines = Array.from({ length: yTicks + 1 }, (_, i) => Math.round((yMax / yTicks) * i));
+
+  return (
+    <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #eee", padding: "14px 12px 10px", marginBottom: 12 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8 }}>
+        Evolución acumulada
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", display: "block" }}>
+        {yLines.map((v, i) => (
+          <g key={i}>
+            <line x1={pad.left} y1={getY(v)} x2={W - pad.right} y2={getY(v)} stroke="#f0f0f0" strokeWidth="0.5" />
+            <text x={pad.left - 6} y={getY(v) + 3} textAnchor="end" fontSize="8" fill="#ccc" fontWeight="600">{v}</text>
+          </g>
+        ))}
+        {RADS.map((r) => {
+          const pts = points.map((p, i) => ({ x: getX(i), y: getY(p.values[r.id]), v: p.values[r.id] }));
+          if (pts.every((p) => p.v === 0)) return null;
+          const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
+          return (
+            <g key={r.id}>
+              <path d={linePath} fill="none" stroke={r.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              {pts.map((p, i) => p.v > 0 && (
+                <g key={i}>
+                  <circle cx={p.x} cy={p.y} r="4" fill="#fff" stroke={r.color} strokeWidth="2" />
+                  <text x={p.x} y={p.y - 9} textAnchor="middle" fontSize="9" fontWeight="700" fill={r.color}>{p.v}</text>
+                </g>
+              ))}
+            </g>
+          );
+        })}
+        {points.map((p, i) => (
+          <text key={i} x={getX(i)} y={H - 6} textAnchor="middle" fontSize="9" fill="#bbb" fontWeight="600">
+            {p.label.substring(0, 3)}
+          </text>
+        ))}
+      </svg>
+      <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 6 }}>
+        {RADS.map((r) => (
+          <span key={r.id} style={{ fontSize: 9, display: "flex", alignItems: "center", gap: 3, color: "#999" }}>
+            <span style={{ width: 8, height: 3, borderRadius: 1, background: r.color, display: "inline-block" }} />{r.apodo}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── AI Expandable Field ──
 function AiField() {
   const [open, setOpen] = useState(false);
@@ -316,6 +393,25 @@ function AiField() {
     setImagePreview(null);
     if (fileRef.current) fileRef.current.value = "";
   };
+
+  const handlePaste = useCallback((e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          setImage(ev.target.result);
+          setImagePreview(URL.createObjectURL(file));
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+    }
+  }, []);
 
   const analyze = async () => {
     if (!text.trim() && !image) return;
@@ -387,9 +483,10 @@ function AiField() {
           padding: 14,
         }}>
           <textarea
-            placeholder="Pega aquí texto con datos de mamografías, totales, pendientes..."
+            placeholder="Pega aquí texto o imagen con datos de mamografías, totales, pendientes..."
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onPaste={handlePaste}
             style={{
               width: "100%",
               minHeight: 70,
@@ -629,7 +726,7 @@ export default function Home() {
   );
 
   return (
-    <div style={S.container}>
+    <div className="app-container" style={S.container}>
       {/* LAST UPDATE TIMESTAMP */}
       {lastEdit && (
         <p style={{ fontSize: 10, color: "#c0c0c0", margin: "0 0 6px", textAlign: "center", letterSpacing: "0.3px" }}>
@@ -715,6 +812,9 @@ export default function Home() {
         </div>
       </div>
 
+      {/* CUMULATIVE CHART */}
+      <YearCumulativeChart meses={meses} />
+
       {/* MONTHLY RECORDS */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -724,7 +824,7 @@ export default function Home() {
         {meses.length === 0 ? (
           <div style={S.empty}><p style={{ color: "#aaa", fontSize: 13 }}>Sin registros.</p></div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="month-grid">
             {meses.map((mes) => (
               <MesCard key={mes.id} mes={mes} maxVal={globalMax} onEdit={openForm} onDelete={delReg} delCfm={delCfm} setDelCfm={setDelCfm} />
             ))}
@@ -799,7 +899,7 @@ export default function Home() {
 }
 
 const S = {
-  container: { fontFamily: "'DM Sans','Nunito','Helvetica Neue',sans-serif", maxWidth: 720, margin: "0 auto", padding: "16px 12px 36px", background: "#fafaf8", minHeight: "100vh", color: "#1a1a1a", boxSizing: "border-box" },
+  container: { fontFamily: "'DM Sans','Nunito','Helvetica Neue',sans-serif", padding: "16px 12px 36px", background: "#fafaf8", minHeight: "100vh", color: "#1a1a1a", boxSizing: "border-box" },
   statusBadge: { fontSize: 11, color: "#5a8a5a", fontWeight: 600, padding: "2px 6px", background: "#e8f0e8", borderRadius: 10 },
   secTitle: { fontSize: 12, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: "1px", margin: 0 },
   addBtn: { background: "#c4956a", color: "#fff", border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" },
