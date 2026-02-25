@@ -14,6 +14,19 @@ const RADS = [
 
 const eur = (n) => n.toLocaleString("es-ES", { style: "currency", currency: "EUR" });
 
+// ── Seed: ensure 2024 historical data exists ──
+async function ensureHistorico2024() {
+  const records = [
+    { id: '2024-espinosa', anio: 2024, radiologist_id: 'espinosa', nombre: 'Alexis Espinosa Pizarro', apodo: 'Alexis', color: '#c4956a', lecturas: 7186 },
+    { id: '2024-fernandez', anio: 2024, radiologist_id: 'fernandez', nombre: 'José Mª Fernández Peña', apodo: 'Chema', color: '#6a9ec4', lecturas: 1892 },
+    { id: '2024-aguilar', anio: 2024, radiologist_id: 'aguilar', nombre: 'Natalia Aguilar Pérez', apodo: 'Natalia', color: '#c47a9e', lecturas: 2189 },
+    { id: '2024-cartier', anio: 2024, radiologist_id: 'cartier', nombre: 'Germaine Cartier Velázquez', apodo: 'Germaine', color: '#9a7ec4', lecturas: 1 },
+    { id: '2024-vazquez', anio: 2024, radiologist_id: 'vazquez', nombre: 'Jorge Vázquez Alfageme', apodo: 'Jorge', color: '#8bc49a', lecturas: 1554 },
+  ];
+  const { error } = await supabase.from('historico').upsert(records, { onConflict: 'id' });
+  if (error) console.error('ensureHistorico2024:', error);
+}
+
 // ── Supabase helpers ──
 async function fetchRegistros() {
   const { data, error } = await supabase.from("registros").select("*").order("ts", { ascending: true });
@@ -664,9 +677,10 @@ export default function Home() {
   const [editPend, setEditPend] = useState(false);
   const [pendIn, setPendIn] = useState("");
 
-  // Load data from Supabase
+  // Load data from Supabase (ensure 2024 seed first)
   useEffect(() => {
     (async () => {
+      await ensureHistorico2024();
       const [r, c, h] = await Promise.all([fetchRegistros(), fetchConfig(), fetchHistorico()]);
       setRegs(r);
       setAppSt(c);
