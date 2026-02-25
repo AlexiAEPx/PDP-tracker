@@ -48,6 +48,13 @@ INSERT INTO registros (id, mes, tipo, periodo, fechas, lecturas, ts) VALUES
   ('feb-16-20', 'Febrero 2026', 'sub', '16–20 Feb', '16/02–20/02', '{"espinosa": 224, "fernandez": 61, "vazquez": 172}', '2026-02-20T00:00:00Z'),
   ('feb-23-01mar', 'Febrero 2026', 'sub', '23 Feb–1 Mar', '23/02–01/03', '{"espinosa": 63, "fernandez": 67, "vazquez": 64, "aguilar": 15}', '2026-03-01T00:00:00Z');
 
+-- Histórico 2023
+INSERT INTO historico (id, anio, radiologist_id, nombre, apodo, color, lecturas) VALUES
+  ('2023-espinosa', 2023, 'espinosa', 'Alexis Espinosa Pizarro', 'Alexis', '#c4956a', 5765),
+  ('2023-fernandez', 2023, 'fernandez', 'José Mª Fernández Peña', 'Chema', '#6a9ec4', 3329),
+  ('2023-aguilar', 2023, 'aguilar', 'Natalia Aguilar Pérez', 'Natalia', '#c47a9e', 2372),
+  ('2023-vazquez', 2023, 'vazquez', 'Jorge Vázquez Alfageme', 'Jorge', '#8bc49a', 1571);
+
 -- Histórico 2024
 INSERT INTO historico (id, anio, radiologist_id, nombre, apodo, color, lecturas) VALUES
   ('2024-espinosa', 2024, 'espinosa', 'Alexis Espinosa Pizarro', 'Alexis', '#c4956a', 7186),
