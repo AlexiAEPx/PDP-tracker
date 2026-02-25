@@ -3,7 +3,16 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "../lib/supabase";
 
-const PRECIO = 4.93;
+const PRECIO = 4.93;          // Desde junio 2025
+const PRECIO_ANTERIOR = 3.25;  // 2023, 2024 y enero–mayo 2025
+
+// Devuelve el precio/lectura para un año histórico.
+// 2025 es año de transición (ene–may 3,25 / jun–dic 4,93);
+// como el histórico solo tiene totales anuales, se aplica 4,93 por defecto.
+function precioParaAnio(anio) {
+  if (anio <= 2024) return PRECIO_ANTERIOR;
+  return PRECIO;
+}
 
 const RADS = [
   { id: "espinosa", nombre: "Alexis Espinosa Pizarro", corto: "Espinosa", apodo: "Alexis", color: "#c4956a", bg: "linear-gradient(135deg, #c4956a, #d4a97a)" },
@@ -303,8 +312,9 @@ function HistYear({ year, data }) {
           <span style={{ fontSize: 14, fontWeight: 700, color: "#888" }}>📁 {year}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <span style={{ fontSize: 9, background: "#f0ede8", color: "#8a7a6a", padding: "2px 6px", borderRadius: 10, fontWeight: 600 }}>{eur(precioParaAnio(year))}/lect.</span>
           <span style={{ fontSize: 11, color: "#aaa", fontWeight: 600 }}>{total.toLocaleString("es-ES")}</span>
-          <span style={{ fontSize: 13, fontWeight: 800, color: "#888" }}>{eur(total * PRECIO)}</span>
+          <span style={{ fontSize: 13, fontWeight: 800, color: "#888" }}>{eur(total * precioParaAnio(year))}</span>
         </div>
       </button>
       {open && (
@@ -332,7 +342,7 @@ function HistYear({ year, data }) {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                     <span style={{ fontSize: 11, color: "#888" }}>{r.lecturas.toLocaleString("es-ES")}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{eur(r.lecturas * PRECIO)}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{eur(r.lecturas * precioParaAnio(year))}</span>
                     <span style={{ fontSize: 10, color: r.color, fontWeight: 700, background: `${r.color}20`, padding: "1px 5px", borderRadius: 4 }}>{pct}%</span>
                   </div>
                 </div>
