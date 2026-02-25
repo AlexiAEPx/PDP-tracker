@@ -1,3 +1,108 @@
+/* ── Theme variables ── */
+:root,
+[data-theme="light"] {
+  /* Backgrounds — soft, warm whites (not harsh) */
+  --bg-page: #f0ede8;
+  --bg-card: #f8f6f1;
+  --bg-elevated: #f0ede8;
+  --bg-input: #fdfcf9;
+  --bg-sub: #f7f6f3;
+
+  /* Text */
+  --text-primary: #1a1a1a;
+  --text-heading: #2c2c2e;
+  --text-secondary: #333;
+  --text-muted: #666;
+  --text-label: #888;
+  --text-faint: #999;
+  --text-placeholder: #aaa;
+  --text-dim: #bbb;
+  --text-ghost: #ccc;
+
+  /* Borders */
+  --border-default: #eee;
+  --border-strong: #ddd;
+  --border-subtle: #f0f0f0;
+  --border-card: #e0ddd8;
+
+  /* UI elements */
+  --btn-primary-bg: #2c2c2e;
+  --btn-primary-color: #fff;
+  --overlay: rgba(0,0,0,0.5);
+  --badge-bg: #f0ede8;
+  --badge-color: #8a7a6a;
+  --status-bg: #e8f0e8;
+  --status-color: #5a8a5a;
+
+  /* Charts */
+  --chart-baseline: #e8e8e4;
+  --chart-dot: #fff;
+  --chart-label: #bbb;
+  --bar-label: #666;
+
+  /* Historical */
+  --hist-bg: #f9f8f5;
+
+  /* AI section */
+  --ai-border: #e0daf0;
+  --ai-bg: #f8f5ff;
+  --ai-color: #764ba2;
+  --ai-attach-bg: #f8f5ff;
+  --ai-attach-border: #c4b5d9;
+}
+
+[data-theme="dark"] {
+  /* Backgrounds — true black */
+  --bg-page: #000;
+  --bg-card: #0c0c0c;
+  --bg-elevated: #080808;
+  --bg-input: #111;
+  --bg-sub: #0a0a0a;
+
+  /* Text */
+  --text-primary: #e0e0e0;
+  --text-heading: #f0f0f0;
+  --text-secondary: #ccc;
+  --text-muted: #999;
+  --text-label: #777;
+  --text-faint: #666;
+  --text-placeholder: #555;
+  --text-dim: #444;
+  --text-ghost: #333;
+
+  /* Borders */
+  --border-default: #1a1a1a;
+  --border-strong: #333;
+  --border-subtle: #151515;
+  --border-card: #222;
+
+  /* UI elements */
+  --btn-primary-bg: #e0e0e0;
+  --btn-primary-color: #000;
+  --overlay: rgba(0,0,0,0.85);
+  --badge-bg: #1a1810;
+  --badge-color: #b0a090;
+  --status-bg: #0a1a0a;
+  --status-color: #6a9a6a;
+
+  /* Charts */
+  --chart-baseline: #222;
+  --chart-dot: #000;
+  --chart-label: #555;
+  --bar-label: #999;
+
+  /* Historical */
+  --hist-bg: #080808;
+
+  /* AI section */
+  --ai-border: #2a1a3a;
+  --ai-bg: #0d0818;
+  --ai-color: #9a6ad0;
+  --ai-attach-bg: #0d0818;
+  --ai-attach-border: #3a2a4a;
+}
+
+/* ── Base reset ── */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -6,9 +111,10 @@
 
 html, body {
   font-family: 'DM Sans', 'Nunito', 'Helvetica Neue', sans-serif;
-  background: #fafaf8;
-  color: #1a1a1a;
+  background: var(--bg-page);
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 /* Responsive container */

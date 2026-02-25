@@ -51,6 +51,39 @@ async function updateConfig(value) {
   return !error;
 }
 
+// ── Theme Switcher ──
+function ThemeSwitcher({ themePreference, setThemePreference }) {
+  const modes = [
+    { id: "light", icon: "☀️" },
+    { id: "auto", icon: "◐" },
+    { id: "dark", icon: "🌙" },
+  ];
+
+  return (
+    <div style={{ display: "flex", gap: 2, background: "var(--bg-elevated)", borderRadius: 8, padding: 2, border: "1px solid var(--border-default)" }}>
+      {modes.map((m) => (
+        <button
+          key={m.id}
+          onClick={() => setThemePreference(m.id)}
+          style={{
+            padding: "4px 8px",
+            borderRadius: 6,
+            border: "none",
+            background: themePreference === m.id ? "var(--bg-card)" : "transparent",
+            cursor: "pointer",
+            fontSize: 12,
+            lineHeight: 1,
+            boxShadow: themePreference === m.id ? "0 1px 3px rgba(0,0,0,0.15)" : "none",
+            transition: "background 0.2s, box-shadow 0.2s",
+          }}
+        >
+          {m.icon}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ── Mini Line Chart (integrated, matches MiniBars height) ──
 function MiniLineChart({ subs }) {
   if (!subs || subs.length < 2) return null;
@@ -75,7 +108,7 @@ function MiniLineChart({ subs }) {
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "100%", display: "block" }}>
       {/* Baseline */}
-      <line x1={pad.left} y1={pad.top + ch} x2={W - pad.right} y2={pad.top + ch} stroke="#e8e8e4" strokeWidth="0.5" />
+      <line x1={pad.left} y1={pad.top + ch} x2={W - pad.right} y2={pad.top + ch} strokeWidth="0.5" style={{ stroke: "var(--chart-baseline)" }} />
       {/* Lines + dots for each rad */}
       {RADS.map((r) => {
         let cumul = 0;
@@ -87,7 +120,7 @@ function MiniLineChart({ subs }) {
             <path d={linePath} fill="none" stroke={r.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             {points.map((p, i) => p.v > 0 && (
               <g key={i}>
-                <circle cx={p.x} cy={p.y} r="3" fill="#fff" stroke={r.color} strokeWidth="1.5" />
+                <circle cx={p.x} cy={p.y} r="3" stroke={r.color} strokeWidth="1.5" style={{ fill: "var(--chart-dot)" }} />
                 <text x={p.x} y={p.y - 5} textAnchor="middle" fontSize="7" fontWeight="700" fill={r.color}>{p.v}</text>
               </g>
             ))}
@@ -96,7 +129,7 @@ function MiniLineChart({ subs }) {
       })}
       {/* Sub-period labels at bottom */}
       {subs.map((s, i) => (
-        <text key={s.id} x={getX(i)} y={H - 3} textAnchor="middle" fontSize="7" fill="#bbb" fontWeight="600">{s.periodo}</text>
+        <text key={s.id} x={getX(i)} y={H - 3} textAnchor="middle" fontSize="7" fontWeight="600" style={{ fill: "var(--chart-label)" }}>{s.periodo}</text>
       ))}
     </svg>
   );
@@ -112,7 +145,7 @@ function MiniBars({ lecturas, maxVal }) {
         const v = lecturas[r.id] || 0;
         return (
           <div key={r.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            {v > 0 && <span style={{ fontSize: 9, fontWeight: 700, color: "#666", marginBottom: 1 }}>{v}</span>}
+            {v > 0 && <span style={{ fontSize: 9, fontWeight: 700, color: "var(--bar-label)", marginBottom: 1 }}>{v}</span>}
             <div style={{ width: 28, height: Math.max(getH(v), 2), background: r.color, borderRadius: "3px 3px 0 0" }} />
           </div>
         );
@@ -151,7 +184,7 @@ function YearMiniLineChart({ meses }) {
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "100%", display: "block" }}>
-      <line x1={pad.left} y1={pad.top + ch} x2={W - pad.right} y2={pad.top + ch} stroke="#e8e8e4" strokeWidth="0.5" />
+      <line x1={pad.left} y1={pad.top + ch} x2={W - pad.right} y2={pad.top + ch} strokeWidth="0.5" style={{ stroke: "var(--chart-baseline)" }} />
       {RADS.map((r) => {
         const pts = points.map((p, i) => ({ x: getX(i), y: getY(p.values[r.id]), v: p.values[r.id] }));
         if (pts.every((p) => p.v === 0)) return null;
@@ -161,7 +194,7 @@ function YearMiniLineChart({ meses }) {
             <path d={linePath} fill="none" stroke={r.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             {pts.map((p, i) => p.v > 0 && (
               <g key={i}>
-                <circle cx={p.x} cy={p.y} r="3" fill="#fff" stroke={r.color} strokeWidth="1.5" />
+                <circle cx={p.x} cy={p.y} r="3" stroke={r.color} strokeWidth="1.5" style={{ fill: "var(--chart-dot)" }} />
                 <text x={p.x} y={p.y - 5} textAnchor="middle" fontSize="7" fontWeight="700" fill={r.color}>{p.v}</text>
               </g>
             ))}
@@ -169,29 +202,31 @@ function YearMiniLineChart({ meses }) {
         );
       })}
       {points.map((p, i) => (
-        <text key={i} x={getX(i)} y={H - 3} textAnchor="middle" fontSize="7" fill="#bbb" fontWeight="600">{p.label}</text>
+        <text key={i} x={getX(i)} y={H - 3} textAnchor="middle" fontSize="7" fontWeight="600" style={{ fill: "var(--chart-label)" }}>{p.label}</text>
       ))}
     </svg>
   );
 }
 
 // ── Month card ──
-function MesCard({ mes, maxVal, onEdit, onDelete, delCfm, setDelCfm }) {
+function MesCard({ mes, maxVal, onEdit, onDelete, delCfm, setDelCfm, isDark }) {
   const [open, setOpen] = useState(false);
   const hasSubs = mes.subs?.length > 0;
   const mesTotal = RADS.reduce((s, r) => s + (mes.lecturas[r.id] || 0), 0);
+  const ra = isDark ? "25" : "12";
+  const rba = isDark ? "35" : "20";
 
   return (
-    <div style={{ borderRadius: 12, border: "1px solid #eee", overflow: "hidden", background: "#fff" }}>
+    <div style={{ borderRadius: 12, border: "1px solid var(--border-default)", overflow: "hidden", background: "var(--bg-card)", transition: "background-color 0.3s, border-color 0.3s" }}>
       <div style={{ padding: "12px 12px 0", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 15, color: "#333" }}>{mes.mes}</div>
-          <div style={{ fontSize: 10, color: "#aaa" }}>{mes.fechas}</div>
+          <div style={{ fontWeight: 700, fontSize: 15, color: "var(--text-secondary)" }}>{mes.mes}</div>
+          <div style={{ fontSize: 10, color: "var(--text-placeholder)" }}>{mes.fechas}</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
           <div style={{ textAlign: "right", marginRight: 4 }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "#2c2c2e" }}>{mesTotal} lect.</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#888" }}>{eur(mesTotal * PRECIO)}</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-heading)" }}>{mesTotal} lect.</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-label)" }}>{eur(mesTotal * PRECIO)}</div>
           </div>
           <button style={S.actBtn} onClick={() => onEdit(mes)}>✎</button>
           {delCfm === mes.id ? (
@@ -206,12 +241,12 @@ function MesCard({ mes, maxVal, onEdit, onDelete, delCfm, setDelCfm }) {
       </div>
 
       <div style={{ padding: "8px 12px 12px" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", background: "#fafaf8", borderRadius: 8, padding: "10px 8px 6px", marginBottom: 8, gap: 0 }}>
+        <div style={{ display: "flex", alignItems: "flex-end", background: "var(--bg-elevated)", borderRadius: 8, padding: "10px 8px 6px", marginBottom: 8, gap: 0, transition: "background-color 0.3s" }}>
           <div style={{ flexShrink: 0 }}>
             <MiniBars lecturas={mes.lecturas} maxVal={maxVal} />
           </div>
           {hasSubs && mes.subs.length >= 2 && (
-            <div style={{ flex: 1, minWidth: 0, height: 150, marginLeft: 6, borderLeft: "1px solid #eee", paddingLeft: 6 }}>
+            <div style={{ flex: 1, minWidth: 0, height: 150, marginLeft: 6, borderLeft: "1px solid var(--border-default)", paddingLeft: 6 }}>
               <MiniLineChart subs={mes.subs} />
             </div>
           )}
@@ -222,21 +257,21 @@ function MesCard({ mes, maxVal, onEdit, onDelete, delCfm, setDelCfm }) {
             if (!l) return null;
             const pct = mesTotal > 0 ? ((l / mesTotal) * 100).toFixed(0) : 0;
             return (
-              <div key={r.id} style={{ background: `${r.color}12`, borderLeft: `3px solid ${r.color}`, borderRadius: "0 6px 6px 0", padding: "5px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
+              <div key={r.id} style={{ background: `${r.color}${ra}`, borderLeft: `3px solid ${r.color}`, borderRadius: "0 6px 6px 0", padding: "5px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                   <span style={{ fontSize: 12, fontWeight: 700, color: r.color }}>{r.apodo}</span>
-                  <span style={{ fontSize: 11, color: "#888" }}>{l}</span>
+                  <span style={{ fontSize: 11, color: "var(--text-label)" }}>{l}</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{eur(l * PRECIO)}</span>
-                  <span style={{ fontSize: 10, color: r.color, fontWeight: 700, background: `${r.color}20`, padding: "1px 5px", borderRadius: 4 }}>{pct}%</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)" }}>{eur(l * PRECIO)}</span>
+                  <span style={{ fontSize: 10, color: r.color, fontWeight: 700, background: `${r.color}${rba}`, padding: "1px 5px", borderRadius: 4 }}>{pct}%</span>
                 </div>
               </div>
             );
           })}
         </div>
         {hasSubs && (
-          <button onClick={() => setOpen(!open)} style={{ marginTop: 8, background: "none", border: "1px solid #eee", borderRadius: 6, padding: "4px 10px", fontSize: 11, color: "#aaa", cursor: "pointer", fontWeight: 600, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, width: "100%" }}>
+          <button onClick={() => setOpen(!open)} style={{ marginTop: 8, background: "none", border: "1px solid var(--border-default)", borderRadius: 6, padding: "4px 10px", fontSize: 11, color: "var(--text-placeholder)", cursor: "pointer", fontWeight: 600, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, width: "100%" }}>
             <span style={{ transition: "transform 0.2s", transform: open ? "rotate(90deg)" : "rotate(0)", display: "inline-block", fontSize: 10 }}>▶</span>
             {open ? "Ocultar" : "Ver"} {mes.subs.length} subperiodo{mes.subs.length > 1 ? "s" : ""}
           </button>
@@ -244,19 +279,19 @@ function MesCard({ mes, maxVal, onEdit, onDelete, delCfm, setDelCfm }) {
       </div>
 
       {hasSubs && open && (
-        <div style={{ borderTop: "1px solid #f0f0f0" }}>
+        <div style={{ borderTop: "1px solid var(--border-subtle)" }}>
           {mes.subs.map((sub) => {
             const subTotal = RADS.reduce((s, r) => s + (sub.lecturas[r.id] || 0), 0);
             return (
-              <div key={sub.id} style={{ padding: "8px 12px 8px 20px", borderBottom: "1px solid #f8f8f8", background: "#fcfcfb" }}>
+              <div key={sub.id} style={{ padding: "8px 12px 8px 20px", borderBottom: "1px solid var(--border-subtle)", background: "var(--bg-sub)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5, flexWrap: "wrap", gap: 4 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
-                    <span style={{ fontSize: 12, color: "#bbb" }}>↳</span>
-                    <span style={{ fontWeight: 600, fontSize: 12, color: "#666" }}>{sub.periodo}</span>
-                    <span style={{ fontSize: 9, color: "#ccc" }}>{sub.fechas}</span>
+                    <span style={{ fontSize: 12, color: "var(--text-dim)" }}>↳</span>
+                    <span style={{ fontWeight: 600, fontSize: 12, color: "var(--text-muted)" }}>{sub.periodo}</span>
+                    <span style={{ fontSize: 9, color: "var(--text-ghost)" }}>{sub.fechas}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "#888" }}>{subTotal} · {eur(subTotal * PRECIO)}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-label)" }}>{subTotal} · {eur(subTotal * PRECIO)}</span>
                     <button style={{ ...S.actBtn, fontSize: 10, padding: "2px 5px" }} onClick={() => onEdit(sub)}>✎</button>
                     {delCfm === sub.id ? (
                       <>
@@ -273,7 +308,7 @@ function MesCard({ mes, maxVal, onEdit, onDelete, delCfm, setDelCfm }) {
                     const l = sub.lecturas[r.id] || 0;
                     if (!l) return null;
                     return (
-                      <span key={r.id} style={{ fontSize: 10, background: `${r.color}12`, borderLeft: `2px solid ${r.color}`, padding: "2px 6px", borderRadius: "0 4px 4px 0", color: "#666", display: "flex", gap: 3, alignItems: "center" }}>
+                      <span key={r.id} style={{ fontSize: 10, background: `${r.color}${ra}`, borderLeft: `2px solid ${r.color}`, padding: "2px 6px", borderRadius: "0 4px 4px 0", color: "var(--text-muted)", display: "flex", gap: 3, alignItems: "center" }}>
                         <strong style={{ color: r.color }}>{r.apodo}</strong> {l} · {eur(l * PRECIO)}
                       </span>
                     );
@@ -289,34 +324,36 @@ function MesCard({ mes, maxVal, onEdit, onDelete, delCfm, setDelCfm }) {
 }
 
 // ── Historical Year ──
-function HistYear({ year, data }) {
+function HistYear({ year, data, isDark }) {
   const [open, setOpen] = useState(false);
   if (!data.length) return null;
   const total = data.reduce((s, r) => s + r.lecturas, 0);
   const maxLect = data[0]?.lecturas || 1;
+  const ra = isDark ? "25" : "12";
+  const rba = isDark ? "35" : "20";
 
   return (
-    <div style={{ borderRadius: 12, border: "1px solid #e0ddd8", overflow: "hidden", background: "#f9f8f5", marginBottom: 8 }}>
+    <div style={{ borderRadius: 12, border: "1px solid var(--border-card)", overflow: "hidden", background: "var(--hist-bg)", marginBottom: 8, transition: "background-color 0.3s, border-color 0.3s" }}>
       <button onClick={() => setOpen(!open)} style={{ width: "100%", background: "none", border: "none", padding: "12px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", fontFamily: "inherit", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-          <span style={{ transition: "transform 0.2s", transform: open ? "rotate(90deg)" : "rotate(0)", display: "inline-block", fontSize: 10, color: "#aaa" }}>▶</span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#888" }}>📁 {year}</span>
+          <span style={{ transition: "transform 0.2s", transform: open ? "rotate(90deg)" : "rotate(0)", display: "inline-block", fontSize: 10, color: "var(--text-placeholder)" }}>▶</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-label)" }}>📁 {year}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-          <span style={{ fontSize: 11, color: "#aaa", fontWeight: 600 }}>{total.toLocaleString("es-ES")}</span>
-          <span style={{ fontSize: 13, fontWeight: 800, color: "#888" }}>{eur(total * PRECIO)}</span>
+          <span style={{ fontSize: 11, color: "var(--text-placeholder)", fontWeight: 600 }}>{total.toLocaleString("es-ES")}</span>
+          <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-label)" }}>{eur(total * PRECIO)}</span>
         </div>
       </button>
       {open && (
-        <div style={{ borderTop: "1px solid #e8e6e2", padding: "10px 12px" }}>
+        <div style={{ borderTop: "1px solid var(--border-card)", padding: "10px 12px" }}>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 6, justifyContent: "center", marginBottom: 14, padding: "6px 0" }}>
             {data.map((r) => {
               const h = (r.lecturas / maxLect) * 110;
               return (
                 <div key={r.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, flex: 1, maxWidth: 60 }}>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "#888" }}>{r.lecturas.toLocaleString("es-ES")}</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "var(--text-label)" }}>{r.lecturas.toLocaleString("es-ES")}</span>
                   <div style={{ width: "100%", height: Math.max(h, 3), background: r.color, borderRadius: "4px 4px 0 0" }} />
-                  <span style={{ fontSize: 9, color: "#aaa", fontWeight: 600, marginTop: 2 }}>{r.apodo}</span>
+                  <span style={{ fontSize: 9, color: "var(--text-placeholder)", fontWeight: 600, marginTop: 2 }}>{r.apodo}</span>
                 </div>
               );
             })}
@@ -325,15 +362,15 @@ function HistYear({ year, data }) {
             {data.map((r) => {
               const pct = ((r.lecturas / total) * 100).toFixed(0);
               return (
-                <div key={r.id} style={{ background: `${r.color}12`, borderLeft: `3px solid ${r.color}`, borderRadius: "0 6px 6px 0", padding: "5px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
+                <div key={r.id} style={{ background: `${r.color}${ra}`, borderLeft: `3px solid ${r.color}`, borderRadius: "0 6px 6px 0", padding: "5px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
                     <span style={{ fontSize: 12, fontWeight: 700, color: r.color }}>{r.apodo}</span>
-                    <span style={{ fontSize: 10, color: "#999", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.nombre}</span>
+                    <span style={{ fontSize: 10, color: "var(--text-faint)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.nombre}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                    <span style={{ fontSize: 11, color: "#888" }}>{r.lecturas.toLocaleString("es-ES")}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{eur(r.lecturas * PRECIO)}</span>
-                    <span style={{ fontSize: 10, color: r.color, fontWeight: 700, background: `${r.color}20`, padding: "1px 5px", borderRadius: 4 }}>{pct}%</span>
+                    <span style={{ fontSize: 11, color: "var(--text-label)" }}>{r.lecturas.toLocaleString("es-ES")}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)" }}>{eur(r.lecturas * PRECIO)}</span>
+                    <span style={{ fontSize: 10, color: r.color, fontWeight: 700, background: `${r.color}${rba}`, padding: "1px 5px", borderRadius: 4 }}>{pct}%</span>
                   </div>
                 </div>
               );
@@ -346,32 +383,34 @@ function HistYear({ year, data }) {
 }
 
 // ── Year Summary Card (bars + cumulative chart, like MesCard) ──
-function YearSummaryCard({ meses, tots, totalG }) {
+function YearSummaryCard({ meses, tots, totalG, isDark }) {
   if (!meses || meses.length === 0) return null;
   const maxBarVal = Math.max(...tots.map((t) => t.total), 1);
   const yearLecturas = Object.fromEntries(tots.map((t) => [t.id, t.total]));
   const hasManyMonths = meses.length >= 2;
+  const ra = isDark ? "25" : "12";
+  const rba = isDark ? "35" : "20";
 
   return (
-    <div style={{ borderRadius: 12, border: "1px solid #eee", overflow: "hidden", background: "#fff", marginBottom: 20 }}>
+    <div style={{ borderRadius: 12, border: "1px solid var(--border-default)", overflow: "hidden", background: "var(--bg-card)", marginBottom: 20, transition: "background-color 0.3s, border-color 0.3s" }}>
       <div style={{ padding: "12px 12px 0", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 15, color: "#333" }}>2026</div>
-          <div style={{ fontSize: 10, color: "#aaa" }}>Evolución acumulada</div>
+          <div style={{ fontWeight: 700, fontSize: 15, color: "var(--text-secondary)" }}>2026</div>
+          <div style={{ fontSize: 10, color: "var(--text-placeholder)" }}>Evolución acumulada</div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: "#2c2c2e" }}>{totalG} lect.</div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#888" }}>{eur(totalG * PRECIO)}</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-heading)" }}>{totalG} lect.</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-label)" }}>{eur(totalG * PRECIO)}</div>
         </div>
       </div>
 
       <div style={{ padding: "8px 12px 12px" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", background: "#fafaf8", borderRadius: 8, padding: "10px 8px 6px", marginBottom: 8, gap: 0 }}>
+        <div style={{ display: "flex", alignItems: "flex-end", background: "var(--bg-elevated)", borderRadius: 8, padding: "10px 8px 6px", marginBottom: 8, gap: 0, transition: "background-color 0.3s" }}>
           <div style={{ flexShrink: 0 }}>
             <MiniBars lecturas={yearLecturas} maxVal={maxBarVal} />
           </div>
           {hasManyMonths && (
-            <div style={{ flex: 1, minWidth: 0, height: 150, marginLeft: 6, borderLeft: "1px solid #eee", paddingLeft: 6 }}>
+            <div style={{ flex: 1, minWidth: 0, height: 150, marginLeft: 6, borderLeft: "1px solid var(--border-default)", paddingLeft: 6 }}>
               <YearMiniLineChart meses={meses} />
             </div>
           )}
@@ -381,14 +420,14 @@ function YearSummaryCard({ meses, tots, totalG }) {
             if (!r.total) return null;
             const pct = totalG > 0 ? ((r.total / totalG) * 100).toFixed(0) : 0;
             return (
-              <div key={r.id} style={{ background: `${r.color}12`, borderLeft: `3px solid ${r.color}`, borderRadius: "0 6px 6px 0", padding: "5px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
+              <div key={r.id} style={{ background: `${r.color}${ra}`, borderLeft: `3px solid ${r.color}`, borderRadius: "0 6px 6px 0", padding: "5px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                   <span style={{ fontSize: 12, fontWeight: 700, color: r.color }}>{r.apodo}</span>
-                  <span style={{ fontSize: 11, color: "#888" }}>{r.total}</span>
+                  <span style={{ fontSize: 11, color: "var(--text-label)" }}>{r.total}</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{eur(r.bruto)}</span>
-                  <span style={{ fontSize: 10, color: r.color, fontWeight: 700, background: `${r.color}20`, padding: "1px 5px", borderRadius: 4 }}>{pct}%</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)" }}>{eur(r.bruto)}</span>
+                  <span style={{ fontSize: 10, color: r.color, fontWeight: 700, background: `${r.color}${rba}`, padding: "1px 5px", borderRadius: 4 }}>{pct}%</span>
                 </div>
               </div>
             );
@@ -508,11 +547,12 @@ function AiField() {
 
       {open && (
         <div style={{
-          border: "1px solid #e0daf0",
+          border: "1px solid var(--ai-border)",
           borderTop: "none",
           borderRadius: "0 0 10px 10px",
-          background: "#fff",
+          background: "var(--bg-card)",
           padding: 14,
+          transition: "background-color 0.3s, border-color 0.3s",
         }}>
           <textarea
             placeholder="Pega aquí texto o imagen con datos de mamografías, totales, pendientes..."
@@ -523,14 +563,16 @@ function AiField() {
               width: "100%",
               minHeight: 70,
               padding: "8px 10px",
-              border: "1px solid #e0daf0",
+              border: "1px solid var(--ai-border)",
               borderRadius: 8,
               fontSize: 13,
               fontFamily: "inherit",
               resize: "vertical",
               outline: "none",
               boxSizing: "border-box",
-              color: "#333",
+              color: "var(--text-secondary)",
+              background: "var(--bg-input)",
+              transition: "background-color 0.3s, border-color 0.3s, color 0.3s",
             }}
           />
 
@@ -538,16 +580,17 @@ function AiField() {
           <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <label style={{
               fontSize: 11,
-              color: "#764ba2",
+              color: "var(--ai-color)",
               fontWeight: 600,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               gap: 4,
               padding: "4px 10px",
-              border: "1px dashed #c4b5d9",
+              border: "1px dashed var(--ai-attach-border)",
               borderRadius: 6,
-              background: "#f8f5ff",
+              background: "var(--ai-attach-bg)",
+              transition: "background-color 0.3s, border-color 0.3s",
             }}>
               📷 Adjuntar imagen
               <input
@@ -563,7 +606,7 @@ function AiField() {
                 <img
                   src={imagePreview}
                   alt="preview"
-                  style={{ height: 40, borderRadius: 4, border: "1px solid #e0daf0" }}
+                  style={{ height: 40, borderRadius: 4, border: "1px solid var(--ai-border)" }}
                 />
                 <button
                   onClick={removeImage}
@@ -599,7 +642,7 @@ function AiField() {
                 padding: "8px 12px",
                 border: "none",
                 borderRadius: 7,
-                background: loading || (!text.trim() && !image) ? "#ccc" : "linear-gradient(135deg, #667eea, #764ba2)",
+                background: loading || (!text.trim() && !image) ? "var(--text-ghost)" : "linear-gradient(135deg, #667eea, #764ba2)",
                 color: "#fff",
                 fontSize: 12,
                 fontWeight: 700,
@@ -614,14 +657,15 @@ function AiField() {
                 onClick={clear}
                 style={{
                   padding: "8px 12px",
-                  border: "1px solid #ddd",
+                  border: "1px solid var(--border-strong)",
                   borderRadius: 7,
-                  background: "#fff",
+                  background: "var(--bg-card)",
                   fontSize: 12,
                   fontWeight: 600,
                   cursor: "pointer",
-                  color: "#888",
+                  color: "var(--text-label)",
                   fontFamily: "inherit",
+                  transition: "background-color 0.3s, border-color 0.3s",
                 }}
               >Limpiar</button>
             )}
@@ -631,15 +675,16 @@ function AiField() {
           {result && (
             <div style={{
               marginTop: 12,
-              background: "#f8f5ff",
-              border: "1px solid #e0daf0",
+              background: "var(--ai-bg)",
+              border: "1px solid var(--ai-border)",
               borderRadius: 8,
               padding: "10px 12px",
+              transition: "background-color 0.3s, border-color 0.3s",
             }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#764ba2", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--ai-color)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
                 Resultado del análisis
               </div>
-              <div style={{ fontSize: 13, color: "#333", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+              <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
                 {result}
               </div>
             </div>
@@ -663,6 +708,44 @@ export default function Home() {
   const [status, setStatus] = useState("");
   const [editPend, setEditPend] = useState(false);
   const [pendIn, setPendIn] = useState("");
+
+  // ── Theme management ──
+  const [themePreference, setThemePreference] = useState("auto");
+  const [resolvedTheme, setResolvedTheme] = useState("light");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("pdp-theme") || "auto";
+      setThemePreference(saved);
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    const resolve = () => {
+      if (themePreference === "auto") {
+        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+      return themePreference;
+    };
+
+    const resolved = resolve();
+    setResolvedTheme(resolved);
+    document.documentElement.setAttribute("data-theme", resolved);
+    try { localStorage.setItem("pdp-theme", themePreference); } catch (e) {}
+
+    if (themePreference === "auto") {
+      const mq = window.matchMedia("(prefers-color-scheme: dark)");
+      const handler = () => {
+        const r = mq.matches ? "dark" : "light";
+        setResolvedTheme(r);
+        document.documentElement.setAttribute("data-theme", r);
+      };
+      mq.addEventListener("change", handler);
+      return () => mq.removeEventListener("change", handler);
+    }
+  }, [themePreference]);
+
+  const isDark = resolvedTheme === "dark";
 
   // Load data from Supabase
   useEffect(() => {
@@ -762,9 +845,24 @@ export default function Home() {
     return d.toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   }, [regs]);
 
+  // ── Pending section colors ──
+  const pendingColors = isDark
+    ? {
+        ok: { bg: "linear-gradient(135deg, #0a1a0a, #0a180a)", border: "#1a3a1a" },
+        warn: { bg: "linear-gradient(135deg, #1a1800, #1a1500)", border: "#3a3000" },
+        alert: { bg: "linear-gradient(135deg, #1a0808, #1a0a0a)", border: "#3a1515" },
+      }
+    : {
+        ok: { bg: "linear-gradient(135deg, #e8f5e9, #f1f8e9)", border: "#c8e6c9" },
+        warn: { bg: "linear-gradient(135deg, #fff8e1, #fff3e0)", border: "#ffe0b2" },
+        alert: { bg: "linear-gradient(135deg, #fce4ec, #ffebee)", border: "#ffcdd2" },
+      };
+
+  const pendStyle = appSt.pendientes === 0 ? pendingColors.ok : appSt.pendientes <= 10 ? pendingColors.warn : pendingColors.alert;
+
   if (loading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#fafaf8" }}>
-      <p style={{ color: "#999", fontSize: 14 }}>Cargando…</p>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "var(--bg-page)" }}>
+      <p style={{ color: "var(--text-faint)", fontSize: 14 }}>Cargando…</p>
     </div>
   );
 
@@ -772,7 +870,7 @@ export default function Home() {
     <div className="app-container" style={S.container}>
       {/* LAST UPDATE TIMESTAMP */}
       {lastEdit && (
-        <p style={{ fontSize: 10, color: "#c0c0c0", margin: "0 0 6px", textAlign: "center", letterSpacing: "0.3px" }}>
+        <p style={{ fontSize: 10, color: "var(--text-ghost)", margin: "0 0 6px", textAlign: "center", letterSpacing: "0.3px" }}>
           Última actualización: {lastEdit}
         </p>
       )}
@@ -783,48 +881,50 @@ export default function Home() {
       {/* HEADER */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 14 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: "-0.5px" }}>PDP Tracker</h1>
-          <p style={{ fontSize: 11, color: "#888", margin: "3px 0 0", letterSpacing: "0.5px", textTransform: "uppercase" }}>Control de lecturas · Dr. Espinosa</p>
+          <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: "-0.5px", color: "var(--text-primary)" }}>PDP Tracker</h1>
+          <p style={{ fontSize: 11, color: "var(--text-label)", margin: "3px 0 0", letterSpacing: "0.5px", textTransform: "uppercase" }}>Control de lecturas · Dr. Espinosa</p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+          <ThemeSwitcher themePreference={themePreference} setThemePreference={setThemePreference} />
           {status && <span style={S.statusBadge}>{status}</span>}
-          <span style={{ fontSize: 11, background: "#f0ede8", color: "#8a7a6a", padding: "3px 8px", borderRadius: 16, fontWeight: 600 }}>{eur(PRECIO)}/lect.</span>
+          <span style={{ fontSize: 11, background: "var(--badge-bg)", color: "var(--badge-color)", padding: "3px 8px", borderRadius: 16, fontWeight: 600, transition: "background-color 0.3s, color 0.3s" }}>{eur(PRECIO)}/lect.</span>
         </div>
       </div>
 
       {/* PENDING */}
       <div style={{
-        background: appSt.pendientes === 0 ? "linear-gradient(135deg, #e8f5e9, #f1f8e9)" : appSt.pendientes <= 10 ? "linear-gradient(135deg, #fff8e1, #fff3e0)" : "linear-gradient(135deg, #fce4ec, #ffebee)",
+        background: pendStyle.bg,
         borderRadius: 10, padding: "10px 12px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center",
-        border: `1px solid ${appSt.pendientes === 0 ? "#c8e6c9" : appSt.pendientes <= 10 ? "#ffe0b2" : "#ffcdd2"}`,
+        border: `1px solid ${pendStyle.border}`,
+        transition: "background 0.3s, border-color 0.3s",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 16 }}>{appSt.pendientes === 0 ? "✅" : appSt.pendientes <= 10 ? "📋" : "🔥"}</span>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#333" }}>Pendientes</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary)" }}>Pendientes</div>
             {editPend ? (
               <div style={{ display: "flex", gap: 4, marginTop: 2, alignItems: "center" }}>
-                <input style={{ width: 50, padding: "2px 5px", border: "1px solid #ccc", borderRadius: 4, fontSize: 12, fontFamily: "inherit", outline: "none" }}
+                <input style={{ width: 50, padding: "2px 5px", border: "1px solid var(--border-strong)", borderRadius: 4, fontSize: 12, fontFamily: "inherit", outline: "none", background: "var(--bg-input)", color: "var(--text-primary)" }}
                   type="number" min="0" autoFocus value={pendIn} onChange={(e) => setPendIn(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") updPend(pendIn); if (e.key === "Escape") setEditPend(false); }} />
-                <button style={{ padding: "2px 6px", borderRadius: 4, border: "none", background: "#2c2c2e", color: "#fff", fontSize: 10, fontWeight: 600, cursor: "pointer" }} onClick={() => updPend(pendIn)}>OK</button>
+                <button style={{ padding: "2px 6px", borderRadius: 4, border: "none", background: "var(--btn-primary-bg)", color: "var(--btn-primary-color)", fontSize: 10, fontWeight: 600, cursor: "pointer" }} onClick={() => updPend(pendIn)}>OK</button>
               </div>
             ) : (
-              <div style={{ fontSize: 10, color: "#666" }}>{appSt.pendientes === 0 ? "Bandeja a cero 🧘" : `${appSt.pendientes} en cola`}</div>
+              <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{appSt.pendientes === 0 ? "Bandeja a cero 🧘" : `${appSt.pendientes} en cola`}</div>
             )}
           </div>
         </div>
         {!editPend && (
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 22, fontWeight: 800, color: appSt.pendientes === 0 ? "#4caf50" : appSt.pendientes <= 10 ? "#ff9800" : "#e53935" }}>{appSt.pendientes}</span>
-            <button style={{ padding: "3px 6px", borderRadius: 4, border: "1px solid #ddd", background: "#fff", fontSize: 9, cursor: "pointer", color: "#888", fontWeight: 600 }}
+            <button style={{ padding: "3px 6px", borderRadius: 4, border: "1px solid var(--border-strong)", background: "var(--bg-card)", fontSize: 9, cursor: "pointer", color: "var(--text-label)", fontWeight: 600, transition: "background-color 0.3s, border-color 0.3s" }}
               onClick={() => { setPendIn(String(appSt.pendientes)); setEditPend(true); }}>Editar</button>
           </div>
         )}
       </div>
 
       {/* YEAR SUMMARY + CUMULATIVE EVOLUTION */}
-      <YearSummaryCard meses={meses} tots={tots} totalG={totalG} />
+      <YearSummaryCard meses={meses} tots={tots} totalG={totalG} isDark={isDark} />
 
       {/* MONTHLY RECORDS */}
       <div style={{ marginBottom: 20 }}>
@@ -833,11 +933,11 @@ export default function Home() {
           <button style={S.addBtn} onClick={() => openForm()}>+ Añadir</button>
         </div>
         {meses.length === 0 ? (
-          <div style={S.empty}><p style={{ color: "#aaa", fontSize: 13 }}>Sin registros.</p></div>
+          <div style={S.empty}><p style={{ color: "var(--text-placeholder)", fontSize: 13 }}>Sin registros.</p></div>
         ) : (
           <div className="month-grid">
             {meses.map((mes) => (
-              <MesCard key={mes.id} mes={mes} maxVal={globalMax} onEdit={openForm} onDelete={delReg} delCfm={delCfm} setDelCfm={setDelCfm} />
+              <MesCard key={mes.id} mes={mes} maxVal={globalMax} onEdit={openForm} onDelete={delReg} delCfm={delCfm} setDelCfm={setDelCfm} isDark={isDark} />
             ))}
           </div>
         )}
@@ -847,14 +947,14 @@ export default function Home() {
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ ...S.secTitle, marginBottom: 10 }}>Histórico</h2>
         {histByYear.map(({ year, data }) => (
-          <HistYear key={year} year={year} data={data} />
+          <HistYear key={year} year={year} data={data} isDark={isDark} />
         ))}
       </div>
 
       {/* Legend */}
       <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 14, flexWrap: "wrap" }}>
         {RADS.map((r) => (
-          <span key={r.id} style={{ fontSize: 10, display: "flex", alignItems: "center", gap: 3, color: "#999" }}>
+          <span key={r.id} style={{ fontSize: 10, display: "flex", alignItems: "center", gap: 3, color: "var(--text-faint)" }}>
             <span style={{ width: 7, height: 7, borderRadius: 2, background: r.color, display: "inline-block" }} />{r.apodo}
           </span>
         ))}
@@ -864,13 +964,13 @@ export default function Home() {
       {showForm && (
         <div style={S.overlay} onClick={() => setShowForm(false)}>
           <div style={{ ...S.modal, padding: 16 }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 16px" }}>{editId ? "Editar" : "Nuevo registro"}</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 16px", color: "var(--text-primary)" }}>{editId ? "Editar" : "Nuevo registro"}</h3>
             <div style={S.fg}>
               <label style={S.lbl}>Tipo</label>
               <div style={{ display: "flex", gap: 6 }}>
                 {[["mes", "Mes"], ["sub", "Subperiodo"]].map(([v, l]) => (
                   <button key={v} onClick={() => setForm({ ...form, tipo: v })}
-                    style={{ flex: 1, padding: 7, borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer", border: form.tipo === v ? "2px solid #2c2c2e" : "1px solid #ddd", background: form.tipo === v ? "#2c2c2e" : "#fff", color: form.tipo === v ? "#fff" : "#888", fontFamily: "inherit" }}>{l}</button>
+                    style={{ flex: 1, padding: 7, borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer", border: form.tipo === v ? "2px solid var(--btn-primary-bg)" : "1px solid var(--border-strong)", background: form.tipo === v ? "var(--btn-primary-bg)" : "var(--bg-card)", color: form.tipo === v ? "var(--btn-primary-color)" : "var(--text-label)", fontFamily: "inherit", transition: "background-color 0.2s, border-color 0.2s, color 0.2s" }}>{l}</button>
                 ))}
               </div>
             </div>
@@ -912,19 +1012,19 @@ export default function Home() {
 }
 
 const S = {
-  container: { fontFamily: "'DM Sans','Nunito','Helvetica Neue',sans-serif", padding: "16px 12px 36px", background: "#fafaf8", minHeight: "100vh", color: "#1a1a1a", boxSizing: "border-box" },
-  statusBadge: { fontSize: 11, color: "#5a8a5a", fontWeight: 600, padding: "2px 6px", background: "#e8f0e8", borderRadius: 10 },
-  secTitle: { fontSize: 12, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: "1px", margin: 0 },
+  container: { fontFamily: "'DM Sans','Nunito','Helvetica Neue',sans-serif", padding: "16px 12px 36px", background: "var(--bg-page)", minHeight: "100vh", color: "var(--text-primary)", boxSizing: "border-box", transition: "background-color 0.3s, color 0.3s" },
+  statusBadge: { fontSize: 11, color: "var(--status-color)", fontWeight: 600, padding: "2px 6px", background: "var(--status-bg)", borderRadius: 10 },
+  secTitle: { fontSize: 12, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "1px", margin: 0 },
   addBtn: { background: "#c4956a", color: "#fff", border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" },
-  empty: { textAlign: "center", padding: "30px 16px", background: "#fff", borderRadius: 10, border: "1px dashed #ddd" },
-  actBtn: { background: "none", border: "1px solid #e0e0e0", borderRadius: 4, padding: "3px 7px", cursor: "pointer", fontSize: 12, color: "#aaa" },
+  empty: { textAlign: "center", padding: "30px 16px", background: "var(--bg-card)", borderRadius: 10, border: "1px dashed var(--border-strong)" },
+  actBtn: { background: "none", border: "1px solid var(--border-default)", borderRadius: 4, padding: "3px 7px", cursor: "pointer", fontSize: 12, color: "var(--text-placeholder)" },
   cfmY: { background: "#e74c3c", color: "#fff", border: "none", borderRadius: 4, padding: "3px 7px", fontSize: 10, fontWeight: 600, cursor: "pointer" },
-  cfmN: { background: "#eee", color: "#666", border: "none", borderRadius: 4, padding: "3px 7px", fontSize: 10, cursor: "pointer" },
-  overlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 12 },
-  modal: { background: "#fff", borderRadius: 14, padding: 20, width: "100%", maxWidth: 400, maxHeight: "90vh", overflowY: "auto", boxSizing: "border-box" },
+  cfmN: { background: "var(--border-default)", color: "var(--text-muted)", border: "none", borderRadius: 4, padding: "3px 7px", fontSize: 10, cursor: "pointer" },
+  overlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "var(--overlay)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 12 },
+  modal: { background: "var(--bg-card)", borderRadius: 14, padding: 20, width: "100%", maxWidth: 400, maxHeight: "90vh", overflowY: "auto", boxSizing: "border-box" },
   fg: { marginBottom: 12 },
-  lbl: { display: "block", fontSize: 11, fontWeight: 600, color: "#888", marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.5px" },
-  inp: { width: "100%", padding: "8px 10px", border: "1px solid #ddd", borderRadius: 7, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" },
-  canBtn: { flex: 1, padding: 9, border: "1px solid #ddd", borderRadius: 7, background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#666" },
-  savBtn: { flex: 1, padding: 9, border: "none", borderRadius: 7, background: "#2c2c2e", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" },
+  lbl: { display: "block", fontSize: 11, fontWeight: 600, color: "var(--text-label)", marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.5px" },
+  inp: { width: "100%", padding: "8px 10px", border: "1px solid var(--border-strong)", borderRadius: 7, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit", background: "var(--bg-input)", color: "var(--text-primary)", transition: "background-color 0.3s, border-color 0.3s, color 0.3s" },
+  canBtn: { flex: 1, padding: 9, border: "1px solid var(--border-strong)", borderRadius: 7, background: "var(--bg-card)", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--text-muted)", fontFamily: "inherit", transition: "background-color 0.3s, border-color 0.3s" },
+  savBtn: { flex: 1, padding: 9, border: "none", borderRadius: 7, background: "var(--btn-primary-bg)", color: "var(--btn-primary-color)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "background-color 0.3s, color 0.3s" },
 };
