@@ -3,7 +3,16 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "../lib/supabase";
 
-const PRECIO = 4.93;
+const PRECIO = 4.93;          // Desde junio 2025
+const PRECIO_ANTERIOR = 3.25;  // 2023, 2024 y enero–mayo 2025
+
+// Devuelve el precio/lectura para un año histórico.
+// 2025 es año de transición (ene–may 3,25 / jun–dic 4,93);
+// como el histórico solo tiene totales anuales, se aplica 4,93 por defecto.
+function precioParaAnio(anio) {
+  if (anio <= 2024) return PRECIO_ANTERIOR;
+  return PRECIO;
+}
 
 const RADS = [
   { id: "espinosa", nombre: "Alexis Espinosa Pizarro", corto: "Espinosa", apodo: "Alexis", color: "#c4956a", bg: "linear-gradient(135deg, #c4956a, #d4a97a)" },
@@ -13,6 +22,19 @@ const RADS = [
 ];
 
 const eur = (n) => n.toLocaleString("es-ES", { style: "currency", currency: "EUR" });
+
+// ── Seed: ensure 2024 historical data exists ──
+async function ensureHistorico2024() {
+  const records = [
+    { id: '2024-espinosa', anio: 2024, radiologist_id: 'espinosa', nombre: 'Alexis Espinosa Pizarro', apodo: 'Alexis', color: '#c4956a', lecturas: 7186 },
+    { id: '2024-fernandez', anio: 2024, radiologist_id: 'fernandez', nombre: 'José Mª Fernández Peña', apodo: 'Chema', color: '#6a9ec4', lecturas: 1892 },
+    { id: '2024-aguilar', anio: 2024, radiologist_id: 'aguilar', nombre: 'Natalia Aguilar Pérez', apodo: 'Natalia', color: '#c47a9e', lecturas: 2189 },
+    { id: '2024-cartier', anio: 2024, radiologist_id: 'cartier', nombre: 'Germaine Cartier Velázquez', apodo: 'Germaine', color: '#9a7ec4', lecturas: 1 },
+    { id: '2024-vazquez', anio: 2024, radiologist_id: 'vazquez', nombre: 'Jorge Vázquez Alfageme', apodo: 'Jorge', color: '#8bc49a', lecturas: 1554 },
+  ];
+  const { error } = await supabase.from('historico').upsert(records, { onConflict: 'id' });
+  if (error) console.error('ensureHistorico2024:', error);
+}
 
 // ── Supabase helpers ──
 async function fetchRegistros() {
@@ -340,8 +362,9 @@ function HistYear({ year, data, isDark }) {
           <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-label)" }}>📁 {year}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <span style={{ fontSize: 9, background: "var(--badge-bg)", color: "var(--badge-color)", padding: "2px 6px", borderRadius: 10, fontWeight: 600, transition: "background-color 0.3s, color 0.3s" }}>{eur(precioParaAnio(year))}/lect.</span>
           <span style={{ fontSize: 11, color: "var(--text-placeholder)", fontWeight: 600 }}>{total.toLocaleString("es-ES")}</span>
-          <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-label)" }}>{eur(total * PRECIO)}</span>
+          <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-label)" }}>{eur(total * precioParaAnio(year))}</span>
         </div>
       </button>
       {open && (
@@ -369,7 +392,7 @@ function HistYear({ year, data, isDark }) {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                     <span style={{ fontSize: 11, color: "var(--text-label)" }}>{r.lecturas.toLocaleString("es-ES")}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)" }}>{eur(r.lecturas * PRECIO)}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)" }}>{eur(r.lecturas * precioParaAnio(year))}</span>
                     <span style={{ fontSize: 10, color: r.color, fontWeight: 700, background: `${r.color}${rba}`, padding: "1px 5px", borderRadius: 4 }}>{pct}%</span>
                   </div>
                 </div>
@@ -747,9 +770,10 @@ export default function Home() {
 
   const isDark = resolvedTheme === "dark";
 
-  // Load data from Supabase
+  // Load data from Supabase (ensure 2024 seed first)
   useEffect(() => {
     (async () => {
+      await ensureHistorico2024();
       const [r, c, h] = await Promise.all([fetchRegistros(), fetchConfig(), fetchHistorico()]);
       setRegs(r);
       setAppSt(c);
