@@ -121,6 +121,60 @@ function MiniBars({ lecturas, maxVal }) {
   );
 }
 
+// ── Year Cumulative Mini Line Chart (by month) ──
+function YearMiniLineChart({ meses }) {
+  if (!meses || meses.length < 2) return null;
+
+  const W = 220, H = 160;
+  const pad = { top: 16, right: 14, bottom: 18, left: 10 };
+  const cw = W - pad.left - pad.right;
+  const ch = H - pad.top - pad.bottom;
+
+  const cumul = {};
+  RADS.forEach((r) => { cumul[r.id] = 0; });
+
+  const points = meses.map((m) => {
+    RADS.forEach((r) => { cumul[r.id] += (m.lecturas[r.id] || 0); });
+    return { label: m.mes.replace(/\s*\d{4}$/, "").substring(0, 3), values: { ...cumul } };
+  });
+
+  let maxVal = 0;
+  points.forEach((p) => {
+    RADS.forEach((r) => { if (p.values[r.id] > maxVal) maxVal = p.values[r.id]; });
+  });
+  if (maxVal === 0) return null;
+  const yMax = Math.ceil(maxVal * 1.15);
+
+  const xStep = cw / (points.length - 1);
+  const getX = (i) => pad.left + i * xStep;
+  const getY = (v) => pad.top + ch - (v / yMax) * ch;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "100%", display: "block" }}>
+      <line x1={pad.left} y1={pad.top + ch} x2={W - pad.right} y2={pad.top + ch} stroke="#e8e8e4" strokeWidth="0.5" />
+      {RADS.map((r) => {
+        const pts = points.map((p, i) => ({ x: getX(i), y: getY(p.values[r.id]), v: p.values[r.id] }));
+        if (pts.every((p) => p.v === 0)) return null;
+        const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
+        return (
+          <g key={r.id}>
+            <path d={linePath} fill="none" stroke={r.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            {pts.map((p, i) => p.v > 0 && (
+              <g key={i}>
+                <circle cx={p.x} cy={p.y} r="3" fill="#fff" stroke={r.color} strokeWidth="1.5" />
+                <text x={p.x} y={p.y - 5} textAnchor="middle" fontSize="7" fontWeight="700" fill={r.color}>{p.v}</text>
+              </g>
+            ))}
+          </g>
+        );
+      })}
+      {points.map((p, i) => (
+        <text key={i} x={getX(i)} y={H - 3} textAnchor="middle" fontSize="7" fill="#bbb" fontWeight="600">{p.label}</text>
+      ))}
+    </svg>
+  );
+}
+
 // ── Month card ──
 function MesCard({ mes, maxVal, onEdit, onDelete, delCfm, setDelCfm }) {
   const [open, setOpen] = useState(false);
@@ -291,78 +345,55 @@ function HistYear({ year, data }) {
   );
 }
 
-// ── Year Cumulative Chart ──
-function YearCumulativeChart({ meses }) {
+// ── Year Summary Card (bars + cumulative chart, like MesCard) ──
+function YearSummaryCard({ meses, tots, totalG }) {
   if (!meses || meses.length === 0) return null;
-
-  const cumul = {};
-  RADS.forEach((r) => { cumul[r.id] = 0; });
-
-  const points = meses.map((m) => {
-    RADS.forEach((r) => { cumul[r.id] += (m.lecturas[r.id] || 0); });
-    return { label: m.mes.replace(/\s*\d{4}$/, ""), values: { ...cumul } };
-  });
-
-  let maxVal = 0;
-  points.forEach((p) => {
-    RADS.forEach((r) => { if (p.values[r.id] > maxVal) maxVal = p.values[r.id]; });
-  });
-  if (maxVal === 0) return null;
-
-  const W = 500, H = 200;
-  const pad = { top: 22, right: 20, bottom: 28, left: 42 };
-  const cw = W - pad.left - pad.right;
-  const ch = H - pad.top - pad.bottom;
-  const yMax = Math.ceil(maxVal * 1.15);
-
-  const n = points.length;
-  const xStep = n > 1 ? cw / (n - 1) : 0;
-  const getX = (i) => pad.left + (n > 1 ? i * xStep : cw / 2);
-  const getY = (v) => pad.top + ch - (v / yMax) * ch;
-
-  const yTicks = 4;
-  const yLines = Array.from({ length: yTicks + 1 }, (_, i) => Math.round((yMax / yTicks) * i));
+  const maxBarVal = Math.max(...tots.map((t) => t.total), 1);
+  const yearLecturas = Object.fromEntries(tots.map((t) => [t.id, t.total]));
+  const hasManyMonths = meses.length >= 2;
 
   return (
-    <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #eee", padding: "14px 12px 10px", marginBottom: 12 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8 }}>
-        Evolución acumulada
+    <div style={{ borderRadius: 12, border: "1px solid #eee", overflow: "hidden", background: "#fff", marginBottom: 20 }}>
+      <div style={{ padding: "12px 12px 0", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: "#333" }}>2026</div>
+          <div style={{ fontSize: 10, color: "#aaa" }}>Evolución acumulada</div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#2c2c2e" }}>{totalG} lect.</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#888" }}>{eur(totalG * PRECIO)}</div>
+        </div>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", display: "block" }}>
-        {yLines.map((v, i) => (
-          <g key={i}>
-            <line x1={pad.left} y1={getY(v)} x2={W - pad.right} y2={getY(v)} stroke="#f0f0f0" strokeWidth="0.5" />
-            <text x={pad.left - 6} y={getY(v) + 3} textAnchor="end" fontSize="8" fill="#ccc" fontWeight="600">{v}</text>
-          </g>
-        ))}
-        {RADS.map((r) => {
-          const pts = points.map((p, i) => ({ x: getX(i), y: getY(p.values[r.id]), v: p.values[r.id] }));
-          if (pts.every((p) => p.v === 0)) return null;
-          const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
-          return (
-            <g key={r.id}>
-              <path d={linePath} fill="none" stroke={r.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              {pts.map((p, i) => p.v > 0 && (
-                <g key={i}>
-                  <circle cx={p.x} cy={p.y} r="4" fill="#fff" stroke={r.color} strokeWidth="2" />
-                  <text x={p.x} y={p.y - 9} textAnchor="middle" fontSize="9" fontWeight="700" fill={r.color}>{p.v}</text>
-                </g>
-              ))}
-            </g>
-          );
-        })}
-        {points.map((p, i) => (
-          <text key={i} x={getX(i)} y={H - 6} textAnchor="middle" fontSize="9" fill="#bbb" fontWeight="600">
-            {p.label.substring(0, 3)}
-          </text>
-        ))}
-      </svg>
-      <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 6 }}>
-        {RADS.map((r) => (
-          <span key={r.id} style={{ fontSize: 9, display: "flex", alignItems: "center", gap: 3, color: "#999" }}>
-            <span style={{ width: 8, height: 3, borderRadius: 1, background: r.color, display: "inline-block" }} />{r.apodo}
-          </span>
-        ))}
+
+      <div style={{ padding: "8px 12px 12px" }}>
+        <div style={{ display: "flex", alignItems: "flex-end", background: "#fafaf8", borderRadius: 8, padding: "10px 8px 6px", marginBottom: 8, gap: 0 }}>
+          <div style={{ flexShrink: 0 }}>
+            <MiniBars lecturas={yearLecturas} maxVal={maxBarVal} />
+          </div>
+          {hasManyMonths && (
+            <div style={{ flex: 1, minWidth: 0, height: 150, marginLeft: 6, borderLeft: "1px solid #eee", paddingLeft: 6 }}>
+              <YearMiniLineChart meses={meses} />
+            </div>
+          )}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {tots.map((r) => {
+            if (!r.total) return null;
+            const pct = totalG > 0 ? ((r.total / totalG) * 100).toFixed(0) : 0;
+            return (
+              <div key={r.id} style={{ background: `${r.color}12`, borderLeft: `3px solid ${r.color}`, borderRadius: "0 6px 6px 0", padding: "5px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: r.color }}>{r.apodo}</span>
+                  <span style={{ fontSize: 11, color: "#888" }}>{r.total}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>{eur(r.bruto)}</span>
+                  <span style={{ fontSize: 10, color: r.color, fontWeight: 700, background: `${r.color}20`, padding: "1px 5px", borderRadius: 4 }}>{pct}%</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -792,40 +823,8 @@ export default function Home() {
         )}
       </div>
 
-      {/* TEAM CARDS */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
-        {tots.map((r) => {
-          const pct = totalG > 0 ? ((r.total / totalG) * 100).toFixed(0) : 0;
-          return (
-            <div key={r.id} style={{ flex: "1 1 calc(50% - 8px)", background: r.bg, borderRadius: 10, padding: "12px 10px 10px", color: "#fff", position: "relative", overflow: "hidden", minWidth: 100 }}>
-              <div style={{ position: "absolute", top: -15, right: -15, width: 50, height: 50, borderRadius: "50%", background: "rgba(255,255,255,0.12)" }} />
-              <div style={{ fontSize: 10, fontWeight: 600, opacity: 0.85, marginBottom: 6, lineHeight: 1.2 }}>{r.nombre}</div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                <div>
-                  <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-1px", lineHeight: 1 }}>{r.total}</div>
-                  <div style={{ fontSize: 9, opacity: 0.7, marginTop: 1 }}>lecturas</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, opacity: 0.9 }}>{pct}%</div>
-                </div>
-              </div>
-              <div style={{ marginTop: 6, fontSize: 13, fontWeight: 700, borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: 5 }}>{eur(r.bruto)}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* TOTAL BAR */}
-      <div style={{ background: "#f5f3ef", borderRadius: 8, padding: "8px 12px", marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: "0.5px" }}>Total 2026</span>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <span style={{ fontSize: 12, color: "#888" }}>{totalG} lect.</span>
-          <span style={{ fontSize: 14, fontWeight: 800, color: "#2c2c2e" }}>{eur(totalG * PRECIO)}</span>
-        </div>
-      </div>
-
-      {/* CUMULATIVE CHART */}
-      <YearCumulativeChart meses={meses} />
+      {/* YEAR SUMMARY + CUMULATIVE EVOLUTION */}
+      <YearSummaryCard meses={meses} tots={tots} totalG={totalG} />
 
       {/* MONTHLY RECORDS */}
       <div style={{ marginBottom: 20 }}>
