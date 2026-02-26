@@ -461,6 +461,47 @@ function YearSummaryCard({ meses, tots, totalG, isDark }) {
   );
 }
 
+// ── Collapsible Current Year (wraps YearSummaryCard + month cards) ──
+function CollapsibleCurrentYear({ meses, tots, totalG, isDark, globalMax, openForm, onDelete, delCfm, setDelCfm }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div style={{ borderRadius: 12, border: "1px solid var(--border-card)", overflow: "hidden", background: "var(--bg-card)", marginBottom: 8, transition: "background-color 0.3s, border-color 0.3s" }}>
+      <button onClick={() => setOpen(!open)} style={{ width: "100%", background: "none", border: "none", padding: "12px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", fontFamily: "inherit", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+          <span style={{ transition: "transform 0.2s", transform: open ? "rotate(90deg)" : "rotate(0)", display: "inline-block", fontSize: 10, color: "var(--text-placeholder)" }}>▶</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-label)" }}>📁 2026</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <span style={{ fontSize: 9, background: "var(--badge-bg)", color: "var(--badge-color)", padding: "2px 6px", borderRadius: 10, fontWeight: 600, transition: "background-color 0.3s, color 0.3s" }}>{eur(PRECIO)}/lect.</span>
+          <span style={{ fontSize: 11, color: "var(--text-placeholder)", fontWeight: 600 }}>{totalG.toLocaleString("es-ES")}</span>
+          <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-label)" }}>{eur(totalG * PRECIO)}</span>
+        </div>
+      </button>
+      {open && (
+        <div style={{ borderTop: "1px solid var(--border-card)", padding: "10px 12px" }}>
+          <YearSummaryCard meses={meses} tots={tots} totalG={totalG} isDark={isDark} />
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "1px" }}>Registros mensuales</span>
+              <button style={{ background: "#c4956a", color: "#fff", border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }} onClick={() => openForm()}>+ Añadir</button>
+            </div>
+            {meses.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "30px 16px", background: "var(--bg-card)", borderRadius: 10, border: "1px dashed var(--border-strong)" }}><p style={{ color: "var(--text-placeholder)", fontSize: 13, margin: 0 }}>Sin registros.</p></div>
+            ) : (
+              <div className="month-grid">
+                {meses.map((mes) => (
+                  <MesCard key={mes.id} mes={mes} maxVal={globalMax} onEdit={openForm} onDelete={onDelete} delCfm={delCfm} setDelCfm={setDelCfm} isDark={isDark} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── AI Expandable Field ──
 function AiField() {
   const [open, setOpen] = useState(false);
@@ -947,29 +988,9 @@ export default function Home() {
         )}
       </div>
 
-      {/* YEAR SUMMARY + CUMULATIVE EVOLUTION */}
-      <YearSummaryCard meses={meses} tots={tots} totalG={totalG} isDark={isDark} />
-
-      {/* MONTHLY RECORDS */}
+      {/* ALL YEARS – collapsed by default */}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <h2 style={S.secTitle}>Registros mensuales</h2>
-          <button style={S.addBtn} onClick={() => openForm()}>+ Añadir</button>
-        </div>
-        {meses.length === 0 ? (
-          <div style={S.empty}><p style={{ color: "var(--text-placeholder)", fontSize: 13 }}>Sin registros.</p></div>
-        ) : (
-          <div className="month-grid">
-            {meses.map((mes) => (
-              <MesCard key={mes.id} mes={mes} maxVal={globalMax} onEdit={openForm} onDelete={delReg} delCfm={delCfm} setDelCfm={setDelCfm} isDark={isDark} />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* HISTORICAL */}
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ ...S.secTitle, marginBottom: 10 }}>Histórico</h2>
+        <CollapsibleCurrentYear meses={meses} tots={tots} totalG={totalG} isDark={isDark} globalMax={globalMax} openForm={openForm} onDelete={delReg} delCfm={delCfm} setDelCfm={setDelCfm} />
         {histByYear.map(({ year, data }) => (
           <HistYear key={year} year={year} data={data} isDark={isDark} />
         ))}
