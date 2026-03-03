@@ -23,6 +23,9 @@ const RADS = [
 
 const eur = (n) => n.toLocaleString("es-ES", { style: "currency", currency: "EUR" });
 
+const normTipo = (tipo) => (tipo || "").toString().trim().toLowerCase();
+const normMesKey = (mes) => (mes || "").toString().trim().replace(/\s+/g, " ").toLowerCase();
+
 // ── Seed: ensure 2024 historical data exists ──
 async function ensureHistorico2024() {
   const records = [
@@ -874,11 +877,52 @@ export default function Home() {
   };
 
   const meses = useMemo(() => {
-    const mm = {}; const ord = [];
-    regs.filter((r) => r.tipo === "mes").forEach((r) => { mm[r.mes] = { ...r, subs: [] }; ord.push(r.mes); });
-    regs.filter((r) => r.tipo === "sub").forEach((r) => { if (mm[r.mes]) mm[r.mes].subs.push(r); });
-    Object.values(mm).forEach((m) => m.subs.sort((a, b) => (a.ts || "").localeCompare(b.ts || "")));
-    return ord.map((m) => mm[m]);
+    const mm = {};
+    const ord = [];
+
+    regs
+      .filter((r) => normTipo(r.tipo) === "mes")
+      .forEach((r) => {
+        const key = normMesKey(r.mes);
+        if (!key) return;
+        mm[key] = { ...r, mes: (r.mes || "").toString().trim(), subs: [], __auto: false };
+        if (!ord.includes(key)) ord.push(key);
+      });
+
+    regs
+      .filter((r) => normTipo(r.tipo) === "sub")
+      .forEach((r) => {
+        const key = normMesKey(r.mes);
+        if (!key) return;
+
+        if (!mm[key]) {
+          mm[key] = {
+            id: `auto-${key}`,
+            mes: (r.mes || "").toString().trim(),
+            tipo: "mes",
+            fechas: "",
+            lecturas: RADS.reduce((a, rad) => ({ ...a, [rad.id]: 0 }), {}),
+            ts: r.ts,
+            subs: [],
+            __auto: true,
+          };
+          ord.push(key);
+        }
+        mm[key].subs.push(r);
+      });
+
+    Object.values(mm).forEach((m) => {
+      m.subs.sort((a, b) => (a.ts || "").localeCompare(b.ts || ""));
+      if (m.__auto) {
+        m.lecturas = RADS.reduce((acc, rad) => {
+          acc[rad.id] = m.subs.reduce((sum, sub) => sum + (sub.lecturas?.[rad.id] || 0), 0);
+          return acc;
+        }, {});
+      }
+      delete m.__auto;
+    });
+
+    return ord.map((k) => mm[k]);
   }, [regs]);
 
   const globalMax = useMemo(() => {
@@ -887,7 +931,7 @@ export default function Home() {
     return m || 1;
   }, [regs]);
 
-  const fullRegs = regs.filter((r) => r.tipo === "mes");
+  const fullRegs = regs.filter((r) => normTipo(r.tipo) === "mes");
   const tots = RADS.map((rad) => { const t = fullRegs.reduce((s, reg) => s + (reg.lecturas?.[rad.id] || 0), 0); return { ...rad, total: t, bruto: t * PRECIO }; });
   const totalG = tots.reduce((s, r) => s + r.total, 0);
 
