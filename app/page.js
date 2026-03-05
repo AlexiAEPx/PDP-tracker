@@ -26,6 +26,56 @@ const eur = (n) => n.toLocaleString("es-ES", { style: "currency", currency: "EUR
 const normTipo = (tipo) => (tipo || "").toString().trim().toLowerCase();
 const normMesKey = (mes) => (mes || "").toString().trim().replace(/\s+/g, " ").toLowerCase();
 
+const MESES_ES = {
+  enero: 1,
+  febrero: 2,
+  marzo: 3,
+  abril: 4,
+  mayo: 5,
+  junio: 6,
+  julio: 7,
+  agosto: 8,
+  septiembre: 9,
+  setiembre: 9,
+  octubre: 10,
+  noviembre: 11,
+  diciembre: 12,
+};
+
+function parseMesAnio(mes) {
+  const clean = normMesKey(mes)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\bde\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const match = clean.match(/([a-z]+)\s+(\d{4})/i);
+  if (!match) return null;
+
+  const monthNumber = MESES_ES[match[1].toLowerCase()];
+  const yearNumber = Number(match[2]);
+  if (!monthNumber || !yearNumber) return null;
+
+  return { monthNumber, yearNumber };
+}
+
+function monthSortValue(mes, fallbackTs = "") {
+  const parsed = parseMesAnio(mes);
+  if (parsed) return parsed.yearNumber * 100 + parsed.monthNumber;
+
+  const d = Date.parse(fallbackTs || "");
+  if (!Number.isNaN(d)) return d;
+
+  return Number.MAX_SAFE_INTEGER;
+}
+
+function monthKey(mes) {
+  const parsed = parseMesAnio(mes);
+  if (parsed) return `${parsed.yearNumber}-${String(parsed.monthNumber).padStart(2, "0")}`;
+  return normMesKey(mes);
+}
+
 // ── Seed: ensure 2024 historical data exists ──
 async function ensureHistorico2024() {
   const records = [
@@ -883,7 +933,7 @@ export default function Home() {
     regs
       .filter((r) => normTipo(r.tipo) === "mes")
       .forEach((r) => {
-        const key = normMesKey(r.mes);
+        const key = monthKey(r.mes);
         if (!key) return;
         mm[key] = { ...r, mes: (r.mes || "").toString().trim(), subs: [], __auto: false };
         if (!ord.includes(key)) ord.push(key);
@@ -892,7 +942,7 @@ export default function Home() {
     regs
       .filter((r) => normTipo(r.tipo) === "sub")
       .forEach((r) => {
-        const key = normMesKey(r.mes);
+        const key = monthKey(r.mes);
         if (!key) return;
 
         if (!mm[key]) {
@@ -922,7 +972,9 @@ export default function Home() {
       delete m.__auto;
     });
 
-    return ord.map((k) => mm[k]);
+    return ord
+      .map((k) => mm[k])
+      .sort((a, b) => monthSortValue(a.mes, a.ts) - monthSortValue(b.mes, b.ts));
   }, [regs]);
 
   const globalMax = useMemo(() => {
