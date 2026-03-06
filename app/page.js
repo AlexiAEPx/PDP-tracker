@@ -89,6 +89,33 @@ async function ensureHistorico2024() {
   if (error) console.error('ensureHistorico2024:', error);
 }
 
+// ── Seed: ensure March 2026 records exist ──
+async function ensureRegistros2026Marzo() {
+  const records = [
+    {
+      id: "mar-2026",
+      mes: "Marzo 2026",
+      tipo: "mes",
+      periodo: "",
+      fechas: "01/03–08/03",
+      lecturas: { espinosa: 136, fernandez: 0, vazquez: 0, aguilar: 36 },
+      ts: "2026-03-08T00:00:00Z",
+    },
+    {
+      id: "mar-01-08",
+      mes: "Marzo 2026",
+      tipo: "sub",
+      periodo: "1–8 Mar",
+      fechas: "01/03–08/03",
+      lecturas: { espinosa: 136, fernandez: 0, vazquez: 0, aguilar: 36 },
+      ts: "2026-03-08T00:00:00Z",
+    },
+  ];
+
+  const { error } = await supabase.from("registros").upsert(records, { onConflict: "id" });
+  if (error) console.error("ensureRegistros2026Marzo:", error);
+}
+
 // ── Supabase helpers ──
 async function fetchRegistros() {
   const { data, error } = await supabase.from("registros").select("*").order("ts", { ascending: true });
@@ -868,6 +895,7 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       await ensureHistorico2024();
+      await ensureRegistros2026Marzo();
       const [r, c, h] = await Promise.all([fetchRegistros(), fetchConfig(), fetchHistorico()]);
       setRegs(r);
       setAppSt(c);
