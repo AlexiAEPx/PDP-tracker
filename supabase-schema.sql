@@ -47,8 +47,8 @@ INSERT INTO registros (id, mes, tipo, periodo, fechas, lecturas, ts) VALUES
   ('feb-09-15', 'Febrero 2026', 'sub', '9–15 Feb', '09/02–15/02', '{"espinosa": 96, "fernandez": 114, "vazquez": 0}', '2026-02-15T00:00:00Z'),
   ('feb-16-20', 'Febrero 2026', 'sub', '16–20 Feb', '16/02–20/02', '{"espinosa": 224, "fernandez": 61, "vazquez": 172}', '2026-02-20T00:00:00Z'),
   ('feb-23-28', 'Febrero 2026', 'sub', '23–28 Feb', '23/02–28/02', '{"espinosa": 140, "fernandez": 138, "vazquez": 140, "aguilar": 29}', '2026-02-28T00:00:00Z'),
-  ('mar-2026', 'Marzo 2026', 'mes', '', '01/03–08/03', '{"espinosa": 136, "fernandez": 0, "vazquez": 0, "aguilar": 36}', '2026-03-08T00:00:00Z'),
-  ('mar-01-08', 'Marzo 2026', 'sub', '1–8 Mar', '01/03–08/03', '{"espinosa": 136, "fernandez": 0, "vazquez": 0, "aguilar": 36}', '2026-03-08T00:00:00Z');
+  ('mar-2026', 'Marzo 2026', 'mes', '', '01/03–08/03', '{"espinosa": 205, "fernandez": 60, "vazquez": 0, "aguilar": 49}', '2026-03-08T00:00:00Z'),
+  ('mar-01-08', 'Marzo 2026', 'sub', '1–8 Mar', '01/03–08/03', '{"espinosa": 205, "fernandez": 60, "vazquez": 0, "aguilar": 49}', '2026-03-08T00:00:00Z');
 
 -- Histórico 2023
 INSERT INTO historico (id, anio, radiologist_id, nombre, apodo, color, lecturas) VALUES

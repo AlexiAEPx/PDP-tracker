@@ -98,7 +98,7 @@ async function ensureRegistros2026Marzo() {
       tipo: "mes",
       periodo: "",
       fechas: "01/03–08/03",
-      lecturas: { espinosa: 136, fernandez: 0, vazquez: 0, aguilar: 36 },
+      lecturas: { espinosa: 205, fernandez: 60, vazquez: 0, aguilar: 49 },
       ts: "2026-03-08T00:00:00Z",
     },
     {
@@ -107,7 +107,7 @@ async function ensureRegistros2026Marzo() {
       tipo: "sub",
       periodo: "1–8 Mar",
       fechas: "01/03–08/03",
-      lecturas: { espinosa: 136, fernandez: 0, vazquez: 0, aguilar: 36 },
+      lecturas: { espinosa: 205, fernandez: 60, vazquez: 0, aguilar: 49 },
       ts: "2026-03-08T00:00:00Z",
     },
   ];
